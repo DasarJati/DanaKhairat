@@ -411,49 +411,49 @@
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            
+
 
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                                 <div>
-                                     <label class="block text-sm font-medium text-gray-700">
-                                    No. Rumah
-                                </label>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        No. Rumah
+                                    </label>
                                     <input type="text" id="waris_no_rumah" name="waris_no_rumah"
                                         value="{{ old('waris_no_rumah') }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
                                         placeholder="No. Rumah">
                                 </div>
                                 <div>
-                                     <label class="block text-sm font-medium text-gray-700">
-                                    Jalan
-                                </label>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Jalan
+                                    </label>
                                     <input type="text" id="waris_jalan" name="waris_jalan"
                                         value="{{ old('waris_jalan') }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
                                         placeholder="Jalan">
                                 </div>
                                 <div>
-                                     <label class="block text-sm font-medium text-gray-700">
-                                    Taman/Kampung
-                                </label>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Taman/Kampung
+                                    </label>
                                     <input type="text" id="waris_taman" name="waris_taman"
                                         value="{{ old('waris_taman') }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
                                         placeholder="Taman/Kampung">
                                 </div>
                                 <div>
-                                     <label class="block text-sm font-medium text-gray-700">
-                                    Poskod
-                                </label>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Poskod
+                                    </label>
                                     <input type="text" id="waris_poskod" name="waris_poskod"
                                         value="{{ old('waris_poskod') }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all text-sm"
                                         placeholder="Poskod" maxlength="5">
                                 </div>
                                 <div>
-                                     <label class="block text-sm font-medium text-gray-700">
-                                    Bandar
-                                </label>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Bandar
+                                    </label>
                                     <input type="text" id="waris_bandar" name="waris_bandar"
                                         value="{{ old('waris_bandar') }}"
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
@@ -1483,14 +1483,13 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Success - show simple success message
                         Swal.fire({
                             icon: 'success',
                             title: 'Permohonan Dihantar!',
                             html: `<p>${data.message}</p>
-                       <p class="text-sm mt-3 text-blue-600">
-                           <i class="fas fa-envelope"></i> Sila semak e-mel anda
-                       </p>`,
+               <p class="text-sm mt-3 text-blue-600">
+                   <i class="fas fa-envelope"></i> Sila semak e-mel anda
+               </p>`,
                             confirmButtonColor: '#ea580c',
                             confirmButtonText: 'OK',
                             timer: 4000,
@@ -1499,24 +1498,57 @@
                             window.location.href = data.redirect_url;
                         });
                     } else {
-                        // Error - show error message
+                        // ========== FIX: Properly handle error messages ==========
+                        let errorMessage = '';
+
+                        if (data.errors) {
+                            if (typeof data.errors === 'string') {
+                                errorMessage = data.errors;
+                            } else if (typeof data.errors === 'object') {
+                                // Get all error messages from the object
+                                const errorList = Object.values(data.errors).flat();
+                                errorMessage = errorList.join('<br>');
+                            }
+                        } else if (data.message) {
+                            errorMessage = data.message;
+                        } else {
+                            errorMessage = 'Ralat berlaku. Sila cuba lagi.';
+                        }
+
                         Swal.fire({
                             icon: 'error',
                             title: 'Pendaftaran Gagal',
                             html: `<div class="text-left">
-                           <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
-                           <p class="text-sm">${data.errors}</p>
-                       </div>`,
+                   <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
+                   <p class="text-sm">${errorMessage}</p>
+               </div>`,
                             confirmButtonColor: '#ea580c'
                         });
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
+
+                    let errorMessage = 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.';
+
+                    if (error.response && error.response.data) {
+                        const data = error.response.data;
+                        if (data.errors) {
+                            if (typeof data.errors === 'string') {
+                                errorMessage = data.errors;
+                            } else if (typeof data.errors === 'object') {
+                                const errorList = Object.values(data.errors).flat();
+                                errorMessage = errorList.join('<br>');
+                            }
+                        } else if (data.message) {
+                            errorMessage = data.message;
+                        }
+                    }
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Ralat Sistem',
-                        text: 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.',
+                        html: `<p>${errorMessage}</p>`,
                         confirmButtonColor: '#ea580c'
                     });
                 });
@@ -1580,6 +1612,34 @@
         if (registrationForm) {
             registrationForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                // ========== CONVERT NAMA TO UPPERCASE ==========
+                const namaField = this.querySelector('input[name="nama"]');
+                if (namaField && namaField.value) {
+                    namaField.value = namaField.value.toUpperCase();
+                }
+
+                // Also convert waris_nama
+                const warisNamaField = this.querySelector('input[name="waris_nama"]');
+                if (warisNamaField && warisNamaField.value) {
+                    warisNamaField.value = warisNamaField.value.toUpperCase();
+                }
+
+                // Also convert other fields as needed
+                const fieldsToUppercase = [
+                    'nama',
+                    'waris_nama',
+                    'jantina',
+                    'bangsa',
+                    'statususer'
+                ];
+
+                fieldsToUppercase.forEach(fieldName => {
+                    const field = this.querySelector(`input[name="${fieldName}"]`);
+                    if (field && field.value) {
+                        field.value = field.value.toUpperCase();
+                    }
+                });
 
                 // FIRST: Combine address before anything else
                 const combinedAddress = combineAddressForSubmit();
@@ -1662,9 +1722,9 @@
                                 icon: 'success',
                                 title: 'Permohonan Dihantar!',
                                 html: `<p>${data.message}</p>
-                   <p class="text-sm mt-3 text-blue-600">
-                       <i class="fas fa-envelope"></i> Sila semak e-mel anda
-                   </p>`,
+               <p class="text-sm mt-3 text-blue-600">
+                   <i class="fas fa-envelope"></i> Sila semak e-mel anda
+               </p>`,
                                 confirmButtonColor: '#ea580c',
                                 confirmButtonText: 'OK',
                                 timer: 4000,
@@ -1673,23 +1733,57 @@
                                 window.location.href = data.redirect_url;
                             });
                         } else {
+                            // ========== FIX: Properly handle error messages ==========
+                            let errorMessage = '';
+
+                            if (data.errors) {
+                                if (typeof data.errors === 'string') {
+                                    errorMessage = data.errors;
+                                } else if (typeof data.errors === 'object') {
+                                    // Get all error messages from the object
+                                    const errorList = Object.values(data.errors).flat();
+                                    errorMessage = errorList.join('<br>');
+                                }
+                            } else if (data.message) {
+                                errorMessage = data.message;
+                            } else {
+                                errorMessage = 'Ralat berlaku. Sila cuba lagi.';
+                            }
+
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Pendaftaran Gagal',
                                 html: `<div class="text-left">
-                       <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
-                       <p class="text-sm">${data.errors}</p>
-                   </div>`,
+                   <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
+                   <p class="text-sm">${errorMessage}</p>
+               </div>`,
                                 confirmButtonColor: '#ea580c'
                             });
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
+
+                        let errorMessage = 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.';
+
+                        if (error.response && error.response.data) {
+                            const data = error.response.data;
+                            if (data.errors) {
+                                if (typeof data.errors === 'string') {
+                                    errorMessage = data.errors;
+                                } else if (typeof data.errors === 'object') {
+                                    const errorList = Object.values(data.errors).flat();
+                                    errorMessage = errorList.join('<br>');
+                                }
+                            } else if (data.message) {
+                                errorMessage = data.message;
+                            }
+                        }
+
                         Swal.fire({
                             icon: 'error',
                             title: 'Ralat Sistem',
-                            text: 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.',
+                            html: `<p>${errorMessage}</p>`,
                             confirmButtonColor: '#ea580c'
                         });
                     });
@@ -1714,7 +1808,7 @@
             });
         }
 
-        
+
 
         const pemohonAddressFields = ['no_rumah', 'jalan', 'taman', 'poskod_field', 'bandar_field'];
         pemohonAddressFields.forEach(fieldId => {
@@ -1877,7 +1971,7 @@
             setupWarisAddressWatchers();
             autoFillWarisAddress();
 
-            
+
         }
 
         // Call when page loads

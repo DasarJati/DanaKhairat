@@ -206,7 +206,15 @@
                                     <span class="text-2xl mb-2">{{ $tuntutan->$field ? '📄' : '❌' }}</span>
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">{{ $label }}</p>
                                     @if ($tuntutan->$field)
-                                        <a href="{{ asset('storage/' . $tuntutan->$field) }}" target="_blank"
+                                        @php
+                                            // Check if it's already a full URL (S3)
+$fileUrl = $tuntutan->$field;
+if (!filter_var($fileUrl, FILTER_VALIDATE_URL)) {
+    // If not a URL, assume it's a local path
+                                                $fileUrl = asset('storage/' . $fileUrl);
+                                            }
+                                        @endphp
+                                        <a href="{{ $fileUrl }}" target="_blank"
                                             class="mt-2 text-xs font-bold text-indigo-600 hover:underline">Lihat Fail</a>
                                     @else
                                         <span class="mt-2 text-xs text-gray-400 italic">Tiada fail</span>

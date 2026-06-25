@@ -2,8 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AhliKariah;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+
+use Illuminate\Http\Request;
+
+use Carbon\Carbon;
+
+use App\Models\AhliKariah;
 use App\Models\ActivityLog;
 use App\Models\TuntutanKhairat;
 use App\Models\PembayaranKhairat;
@@ -13,10 +21,8 @@ use App\Models\HargaKhairat;
 use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\Tanggungan;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
-use Carbon\Carbon;
+
 
 class UserController extends Controller
 {
@@ -378,30 +384,71 @@ class UserController extends Controller
     }
 
     public function storeTransaction(Request $request, User $user)
-    {
-        // Validate the incoming modal data
-        $request->validate([
-            'amount'         => 'required|numeric|min:1',
-            'payment_method' => 'required|string',
-            'paid_at'        => 'required|date',
-            'resit'          => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
-        ]);
+{
+    // Validate the incoming modal data
+    $request->validate([
+        'amount'         => 'required|numeric|min:1',
+        'payment_method' => 'required|string',
+        'paid_at'        => 'required|date',
+        'resit'          => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
+    ]);
 
-        // Handle the receipt upload if provided (saving locally to public_html)
-        $resitPath = null;
-        if ($request->hasFile('resit')) {
-            $folder = public_path('uploads/resit/' . $user->id);
-            if (!file_exists($folder)) mkdir($folder, 0755, true);
+    $resitPath = null;
+    $s3Path = null;
 
-            $filename = time() . '_resit.' . $request->file('resit')->extension();
-            $request->file('resit')->move($folder, $filename);
-            $resitPath = 'uploads/resit/' . $user->id . '/' . $filename;
+    // Handle the receipt upload to S3
+    if ($request->hasFile('resit')) {
+        $file = $request->file('resit');
+
+        if ($file->isValid()) {
+            try {
+                // Generate unique filename
+                $timestamp = now()->format('Ymd_His');
+                $userId = $user->id;
+                $extension = $file->getClientOriginalExtension();
+                $filename = "resit_renew_{$userId}_{$timestamp}." . $extension;
+
+                // S3 path - using 'images/ahli_renew' folder
+                $s3Path = 'images/ahli_renew/' . $filename;
+
+                // Upload to S3
+                $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                if (!$uploaded) {
+                    throw new \Exception('Failed to upload receipt to S3');
+                }
+
+                // Get the S3 URL
+                $resitPath = Storage::disk('s3')->url($s3Path);
+
+                Log::info('Renewal receipt uploaded to S3', [
+                    'user_id' => $user->id,
+                    'path' => $s3Path,
+                    'url' => $resitPath,
+                    'filename' => $filename
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('S3 Upload Error (Renewal Receipt): ' . $e->getMessage(), [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+
+                return back()->with('error', 'Gagal memuat naik resit pembayaran. Sila cuba lagi.');
+            }
+        } else {
+            return back()->with('error', 'Fail resit tidak sah atau rosak. Sila pilih fail yang lain.');
         }
+    }
 
-        // Create the record
-        Payment::create([
+    // Begin transaction
+    DB::beginTransaction();
+
+    try {
+        // Create the payment record
+        $payment = Payment::create([
             'user_id'          => $user->id,
-            'masjid_id'        => $user->masjid_id ?? 1, // Adjust based on your table relations
+            'masjid_id'        => $user->masjid_id ?? 1,
             'name'             => $user->nama ?? $user->name ?? 'Ahli Khairat',
             'amount'           => $request->amount,
             'payment_method'   => $request->payment_method,
@@ -413,6 +460,39 @@ class UserController extends Controller
             'remarks'          => $request->remarks,
         ]);
 
+        DB::commit();
+
+        Log::info('Renewal transaction recorded', [
+            'payment_id' => $payment->id,
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'resit_path' => $resitPath
+        ]);
+
         return back()->with('success', 'Transaksi berjaya direkodkan.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        // Delete uploaded file from S3 if transaction fails
+        if ($resitPath && $s3Path) {
+            try {
+                Storage::disk('s3')->delete($s3Path);
+                Log::info('Deleted S3 file after transaction rollback', [
+                    'path' => $s3Path,
+                    'user_id' => $user->id
+                ]);
+            } catch (\Exception $deleteError) {
+                Log::error('Failed to delete S3 file: ' . $deleteError->getMessage());
+            }
+        }
+
+        Log::error('Renewal transaction failed: ' . $e->getMessage(), [
+            'user_id' => $user->id,
+            'error' => $e->getMessage()
+        ]);
+
+        return back()->with('error', 'Gagal merekodkan transaksi: ' . $e->getMessage());
     }
+}
 }

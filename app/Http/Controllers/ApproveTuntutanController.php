@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+
 use App\Models\TuntutanKhairat;
 use App\Models\User;
 use App\Models\Tanggungan;
@@ -694,13 +696,244 @@ class ApproveTuntutanController extends Controller
     /**
      * Store death record for Luar (non-member)
      */
+    // public function storeDeathRecordLuar(Request $request)
+    // {
+    //     $request->validate([
+    //         'nama' => 'required|string|max:255',
+    //         'ic' => 'required|string|max:20',
+    //         'tarikh_meninggal' => 'required|date',
+    //         'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Made nullable
+    //         'laporan_polis' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'maklumat_lain' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'catatan' => 'nullable|string',
+    //         'status_jenazah' => 'required|in:PROCESSING,SUCCESS',
+    //         'items_modal' => 'array|required_if:status_jenazah,SUCCESS',
+    //         'total_amount_modal' => 'nullable|numeric|min:0',
+    //         'lain_lain_text_modal' => 'nullable|string'
+    //     ]);
+
+    //     $ajk = auth()->user();
+    //     $masjidId = $ajk->masjid_id;
+
+    //     // Get IC number for filename
+    //     $icNumber = preg_replace('/[^0-9]/', '', $request->ic);
+    //     $timestamp = now()->format('Ymd_His');
+
+    //     // Check if death record already exists for this IC (LUAR)
+    //     $existingRecord = TuntutanKhairat::whereHas('ahli', function ($query) use ($request) {
+    //         $query->where('ic', $request->ic);
+    //     })->whereIn('status', ['PAID', 'SUCCESS', 'APPROVED', 'PROCESSING'])
+    //         ->first();
+
+    //     if ($existingRecord) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Rekod kematian untuk IC ini sudah wujud.'
+    //         ], 400);
+    //     }
+
+    //     // Upload files - all nullable now
+    //     $deathCertPath = null;
+    //     $policeReportPath = null;
+    //     $otherReportPath = null;
+
+    //     // Handle Sijil Kematian (Death Certificate) - OPTIONAL now
+    //     if ($request->hasFile('sijil_kematian')) {
+    //         $file = $request->file('sijil_kematian');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "death_certificate_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/death_certificate');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $deathCertPath = 'khairat/death_certificate/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Laporan Polis (Police Report)
+    //     if ($request->hasFile('laporan_polis')) {
+    //         $file = $request->file('laporan_polis');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "police_report_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/police_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $policeReportPath = 'khairat/police_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Maklumat Lain (Other Documents)
+    //     if ($request->hasFile('maklumat_lain')) {
+    //         $file = $request->file('maklumat_lain');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "other_report_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/other_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $otherReportPath = 'khairat/other_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     $isSuccess = $request->status_jenazah === 'SUCCESS';
+    //     $tuntutanStatus = $isSuccess ? 'APPROVED' : 'PROCESSING';
+    //     $amount = $request->total_amount_modal ?? 0.00;
+
+    //     // Create temporary Ahli Khairat record for LUAR (inactive)
+    //     $ahli = AhliKariah::create([
+    //         'nama' => $request->nama,
+    //         'ic' => $request->ic,
+    //         'masjid_id' => $masjidId,
+    //         'user_id' => null,
+    //         'status' => 'inactive',
+    //         'alamat' => null,
+    //         'telefon_bimbit' => null,
+    //         'created_by' => auth()->id(),
+    //     ]);
+
+    //     // Create death record for LUAR
+    //     $deathRecord = TuntutanKhairat::create([
+    //         'masjid_id' => $masjidId,
+    //         'user_id' => auth()->id(),
+    //         'ahli_id' => $ahli->id,
+    //         'tanggungan_id' => null,
+    //         'type' => 'LUAR',
+    //         'date_death' => $request->tarikh_meninggal,
+    //         'status' => $tuntutanStatus,
+    //         'note' => $request->catatan,
+    //         'death_certificate' => $deathCertPath,
+    //         'police_report' => $policeReportPath,
+    //         'other_report' => $otherReportPath,
+    //         'approve_by' => auth()->id(),
+    //         'approved_at' => $isSuccess ? now() : null,
+    //         'amount' => $amount,
+    //     ]);
+
+    //     // If status is SUCCESS and items are provided, save the items
+    //     if ($isSuccess && $request->has('items_modal')) {
+    //         // Define the mapping between item values and their labels/descriptions
+    //         $itemMapping = [
+    //             'pengurusan_jenazah' => [
+    //                 'label' => 'Pengurusan Jenazah',
+    //                 'description' => 'Bayaran untuk pengurusan jenazah'
+    //             ],
+    //             'pengangkutan_jenazah' => [
+    //                 'label' => 'Van Jenazah',
+    //                 'description' => 'Bayaran untuk pengangkutan jenazah'
+    //             ],
+    //             'tanah_perkuburan' => [
+    //                 'label' => 'Gali Kubur',
+    //                 'description' => 'Bayaran untuk menggali kubur'
+    //             ],
+    //             'kain_kafan' => [
+    //                 'label' => 'Kain Kafan',
+    //                 'description' => 'Bayaran untuk kain kafan'
+    //             ],
+    //             'air_mandian' => [
+    //                 'label' => 'Air / Mandian',
+    //                 'description' => 'Bayaran untuk air dan keperluan mandian'
+    //             ],
+    //             'imam_bilal' => [
+    //                 'label' => 'Imam / Bilal',
+    //                 'description' => 'Bayaran untuk imam dan bilal'
+    //             ],
+    //             'lain_lain' => [
+    //                 'label' => 'Lain-lain',
+    //                 'description' => $request->lain_lain_text_modal ?? 'Bayaran untuk lain-lain keperluan'
+    //             ],
+    //         ];
+
+    //         foreach ($request->items_modal as $item) {
+    //             $amountField = 'amount_' . $item . '_modal';
+    //             $itemAmount = $request->input($amountField, 0);
+
+    //             // Only save if amount is greater than 0
+    //             if ($itemAmount > 0) {
+    //                 $itemLabel = $itemMapping[$item]['label'] ?? ucfirst(str_replace('_', ' ', $item));
+    //                 $itemDescription = $itemMapping[$item]['description'] ?? 'Bayaran untuk ' . $itemLabel;
+
+    //                 KhairatItems::create([
+    //                     'tuntutan_id' => $deathRecord->id,
+    //                     'item_name' => $item,
+    //                     'item_label' => $itemLabel,
+    //                     'description' => $itemDescription,
+    //                     'amount' => $itemAmount
+    //                 ]);
+    //             }
+    //         }
+    //     }
+
+    //     // If status is SUCCESS, process payment and wallet deduction
+    //     if ($isSuccess && $amount > 0) {
+    //         try {
+
+
+    //             $payment = Payment::create([
+    //                 'user_id' => $ajk->id,
+    //                 'masjid_id' => $masjidId,
+    //                 'name' => 'Pengeluaran Dana Khairat - Bukan Ahli',
+    //                 'amount' => $amount,
+    //                 'payment_method' => 'WALLET',
+    //                 'status' => 'PAID',
+    //                 'remarks' => 'Pembayaran tuntutan khairat untuk bukan ahli ' . $request->nama . ' (No. IC: ' . $request->ic . ')',
+    //                 'type' => 'Khairat',
+    //                 'transaction_type' => 'transaction_out',
+    //                 'paid_at' => now(),
+    //                 'reference_type' => 'tuntutan_khairat',
+    //                 'reference_id' => $deathRecord->id,
+    //             ]);
+
+    //             $deathRecord->update(['status' => 'SUCCESS']);
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Rekod kematian bukan ahli berhasil disimpan. Pembayaran telah diproses. (RM ' . number_format($amount, 2) . ' telah dikeluarkan dari dompet)',
+    //                 'data' => $deathRecord,
+    //                 'payment' => $payment,
+
+    //             ]);
+    //         } catch (\Exception $e) {
+    //             \Log::error('Payment processing error for LUAR: ' . $e->getMessage());
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Rekod disimpan tetapi gagal memproses pembayaran. Error: ' . $e->getMessage()
+    //             ], 500);
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Rekod kematian bukan ahli berhasil disimpan. Menunggu kelulusan untuk pemprosesan pembayaran.',
+    //         'data' => $deathRecord
+    //     ]);
+    // }
+
     public function storeDeathRecordLuar(Request $request)
     {
         $request->validate([
             'nama' => 'required|string|max:255',
             'ic' => 'required|string|max:20',
             'tarikh_meninggal' => 'required|date',
-            'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Made nullable
+            'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'laporan_polis' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'maklumat_lain' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'catatan' => 'nullable|string',
@@ -730,7 +963,7 @@ class ApproveTuntutanController extends Controller
             ], 400);
         }
 
-        // Upload files - all nullable now
+        // Upload files to S3 - all nullable now
         $deathCertPath = null;
         $policeReportPath = null;
         $otherReportPath = null;
@@ -741,14 +974,30 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "death_certificate_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/death_certificate');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $deathCertPath = 'khairat/death_certificate/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload death certificate to S3');
+                    }
+
+                    // Get the S3 URL
+                    $deathCertPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Death certificate uploaded to S3', [
+                        'ic_number' => $request->ic,
+                        'path' => $s3Path,
+                        'url' => $deathCertPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Death Certificate): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik sijil kematian ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -760,14 +1009,30 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "police_report_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/police_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $policeReportPath = 'khairat/police_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload police report to S3');
+                    }
+
+                    // Get the S3 URL
+                    $policeReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Police report uploaded to S3', [
+                        'ic_number' => $request->ic,
+                        'path' => $s3Path,
+                        'url' => $policeReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Police Report): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik laporan polis ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -779,14 +1044,30 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "other_report_luar_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/other_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $otherReportPath = 'khairat/other_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload other documents to S3');
+                    }
+
+                    // Get the S3 URL
+                    $otherReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Other documents uploaded to S3', [
+                        'ic_number' => $request->ic,
+                        'path' => $s3Path,
+                        'url' => $otherReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Other Documents): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik maklumat lain ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -883,8 +1164,6 @@ class ApproveTuntutanController extends Controller
         // If status is SUCCESS, process payment and wallet deduction
         if ($isSuccess && $amount > 0) {
             try {
-                
-
                 $payment = Payment::create([
                     'user_id' => $ajk->id,
                     'masjid_id' => $masjidId,
@@ -907,7 +1186,6 @@ class ApproveTuntutanController extends Controller
                     'message' => 'Rekod kematian bukan ahli berhasil disimpan. Pembayaran telah diproses. (RM ' . number_format($amount, 2) . ' telah dikeluarkan dari dompet)',
                     'data' => $deathRecord,
                     'payment' => $payment,
-                    
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Payment processing error for LUAR: ' . $e->getMessage());
@@ -928,6 +1206,228 @@ class ApproveTuntutanController extends Controller
     /**
      * Store death record for Ahli Khairat (Main Member)
      */
+    // public function storeDeathRecordAhli(Request $request)
+    // {
+    //     $request->validate([
+    //         'ahli_id' => 'required|exists:ahli_kariah,id',
+    //         'tarikh_meninggal' => 'required|date',
+    //         'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'laporan_polis' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'maklumat_lain' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'catatan' => 'nullable|string',
+    //         'status_jenazah' => 'required|in:PROCESSING,SUCCESS',
+    //         'items' => 'array|required_if:status_jenazah,SUCCESS',
+    //         'total_amount' => 'nullable|numeric|min:0',
+    //         'lain_lain_text' => 'nullable|string'
+    //     ]);
+
+    //     $ajk = auth()->user();
+    //     $masjidId = $ajk->masjid_id;
+
+    //     // Get the Ahli Khairat record (the deceased)
+    //     $ahliKariah = AhliKariah::with('user')->findOrFail($request->ahli_id);
+
+    //     // Get IC number for filename
+    //     $icNumber = preg_replace('/[^0-9]/', '', $ahliKariah->ic_number ?? $ahliKariah->user->ic_number ?? 'unknown');
+    //     $timestamp = now()->format('Ymd_His');
+
+    //     // Check if death record already exists for this Ahli Khairat
+    //     $existingRecord = TuntutanKhairat::where('ahli_id', $request->ahli_id)
+    //         ->whereIn('status', ['PAID', 'SUCCESS', 'APPROVED', 'PROCESSING'])
+    //         ->first();
+
+    //     if ($existingRecord) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Rekod kematian untuk ahli ini sudah wujud.'
+    //         ], 400);
+    //     }
+
+    //     // Upload files
+    //     $deathCertPath = null;
+    //     $policeReportPath = null;
+    //     $otherReportPath = null;
+
+    //     // Handle Sijil Kematian (Death Certificate)
+    //     if ($request->hasFile('sijil_kematian')) {
+    //         $file = $request->file('sijil_kematian');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "death_certificate_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/death_certificate');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $deathCertPath = 'khairat/death_certificate/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Laporan Polis (Police Report)
+    //     if ($request->hasFile('laporan_polis')) {
+    //         $file = $request->file('laporan_polis');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "police_report_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/police_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $policeReportPath = 'khairat/police_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Maklumat Lain (Other Documents)
+    //     if ($request->hasFile('maklumat_lain')) {
+    //         $file = $request->file('maklumat_lain');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "other_report_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/other_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $otherReportPath = 'khairat/other_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     $isSuccess = $request->status_jenazah === 'SUCCESS';
+    //     $tuntutanStatus = $isSuccess ? 'APPROVED' : 'PROCESSING';
+    //     $amount = $request->total_amount ?? 0.00;
+
+    //     // Create death record for AHLI
+    //     $deathRecord = TuntutanKhairat::create([
+    //         'masjid_id' => $masjidId,
+    //         'user_id' => auth()->id(),
+    //         'ahli_id' => $request->ahli_id,
+    //         'tanggungan_id' => null,
+    //         'type' => 'AHLI',
+    //         'date_death' => $request->tarikh_meninggal,
+    //         'status' => $tuntutanStatus,
+    //         'note' => $request->catatan,
+    //         'death_certificate' => $deathCertPath,
+    //         'police_report' => $policeReportPath,
+    //         'other_report' => $otherReportPath,
+    //         'approve_by' => auth()->id(),
+    //         'approved_at' => $isSuccess ? now() : null,
+    //         'amount' => $amount,
+    //     ]);
+
+    //     // If status is SUCCESS and items are provided, save the items
+    //     if ($isSuccess && $request->has('items')) {
+    //         // Define the mapping between item values and their labels/descriptions
+    //         $itemMapping = [
+    //             'pengurusan_jenazah' => [
+    //                 'label' => 'Pengurusan Jenazah',
+    //                 'description' => 'Bayaran untuk pengurusan jenazah'
+    //             ],
+    //             'pengangkutan_jenazah' => [
+    //                 'label' => 'Van Jenazah',
+    //                 'description' => 'Bayaran untuk pengangkutan jenazah'
+    //             ],
+    //             'tanah_perkuburan' => [
+    //                 'label' => 'Gali Kubur',
+    //                 'description' => 'Bayaran untuk menggali kubur'
+    //             ],
+    //             'kain_kafan' => [
+    //                 'label' => 'Kain Kafan',
+    //                 'description' => 'Bayaran untuk kain kafan'
+    //             ],
+    //             'air_mandian' => [
+    //                 'label' => 'Air / Mandian',
+    //                 'description' => 'Bayaran untuk air dan keperluan mandian'
+    //             ],
+    //             'imam_bilal' => [
+    //                 'label' => 'Imam / Bilal',
+    //                 'description' => 'Bayaran untuk imam dan bilal'
+    //             ],
+    //             'lain_lain' => [
+    //                 'label' => 'Lain-lain',
+    //                 'description' => $request->lain_lain_text ?? 'Bayaran untuk lain-lain keperluan'
+    //             ],
+    //         ];
+
+    //         foreach ($request->items as $item) {
+    //             $amountField = 'amount_' . $item;
+    //             $itemAmount = $request->input($amountField, 0);
+
+    //             // Only save if amount is greater than 0
+    //             if ($itemAmount > 0) {
+    //                 $itemLabel = $itemMapping[$item]['label'] ?? ucfirst(str_replace('_', ' ', $item));
+    //                 $itemDescription = $itemMapping[$item]['description'] ?? 'Bayaran untuk ' . $itemLabel;
+
+    //                 KhairatItems::create([
+    //                     'tuntutan_id' => $deathRecord->id,
+    //                     'item_name' => $item,
+    //                     'item_label' => $itemLabel,
+    //                     'description' => $itemDescription,
+    //                     'amount' => $itemAmount
+    //                 ]);
+    //             }
+    //         }
+    //     }
+
+    //     // If status is SUCCESS, process payment and wallet deduction
+    //     if ($isSuccess) {
+    //         try {
+
+    //             $ahliKariah->update(['status' => 'inactive']);
+
+
+    //             $payment = Payment::create([
+    //                 'user_id' => $ajk->id,
+    //                 'masjid_id' => $masjidId,
+    //                 'name' => 'Pengeluaran Dana Khairat - Ahli',
+    //                 'amount' => $amount,
+    //                 'payment_method' => 'WALLET',
+    //                 'status' => 'PAID',
+    //                 'remarks' => 'Pembayaran tuntutan khairat untuk ahli ' . $ahliKariah->nama . ' (No. IC: ' . $ahliKariah->ic_number . ')',
+    //                 'type' => 'Khairat',
+    //                 'transaction_type' => 'transaction_out',
+    //                 'paid_at' => now(),
+    //                 'reference_type' => 'tuntutan_khairat',
+    //                 'reference_id' => $deathRecord->id,
+    //             ]);
+
+    //             $deathRecord->update(['status' => 'SUCCESS']);
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Rekod kematian ahli berjaya disimpan.',
+    //                 'data' => $deathRecord,
+    //                 'payment' => $payment,
+
+    //             ]);
+    //         } catch (\Exception $e) {
+    //             \Log::error('Payment processing error: ' . $e->getMessage());
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Rekod disimpan tetapi gagal memproses pembayaran. Error: ' . $e->getMessage()
+    //             ], 500);
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Rekod kematian ahli berhasil disimpan. Menunggu kelulusan untuk pemprosesan pembayaran.',
+    //         'data' => $deathRecord
+    //     ]);
+    // }
+
     public function storeDeathRecordAhli(Request $request)
     {
         $request->validate([
@@ -965,7 +1465,7 @@ class ApproveTuntutanController extends Controller
             ], 400);
         }
 
-        // Upload files
+        // Upload files to S3
         $deathCertPath = null;
         $policeReportPath = null;
         $otherReportPath = null;
@@ -976,14 +1476,31 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "death_certificate_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/death_certificate');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $deathCertPath = 'khairat/death_certificate/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload death certificate to S3');
+                    }
+
+                    // Get the S3 URL
+                    $deathCertPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Death certificate (Ahli) uploaded to S3', [
+                        'ahli_id' => $request->ahli_id,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $deathCertPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Death Certificate - Ahli): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik sijil kematian ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -995,14 +1512,31 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "police_report_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/police_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $policeReportPath = 'khairat/police_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload police report to S3');
+                    }
+
+                    // Get the S3 URL
+                    $policeReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Police report (Ahli) uploaded to S3', [
+                        'ahli_id' => $request->ahli_id,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $policeReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Police Report - Ahli): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik laporan polis ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -1014,14 +1548,31 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "other_report_ahli_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/other_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $otherReportPath = 'khairat/other_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload other documents to S3');
+                    }
+
+                    // Get the S3 URL
+                    $otherReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Other documents (Ahli) uploaded to S3', [
+                        'ahli_id' => $request->ahli_id,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $otherReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Other Documents - Ahli): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik maklumat lain ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -1106,9 +1657,8 @@ class ApproveTuntutanController extends Controller
         // If status is SUCCESS, process payment and wallet deduction
         if ($isSuccess) {
             try {
-
+                // Update Ahli Kariah status to inactive
                 $ahliKariah->update(['status' => 'inactive']);
-                
 
                 $payment = Payment::create([
                     'user_id' => $ajk->id,
@@ -1132,7 +1682,6 @@ class ApproveTuntutanController extends Controller
                     'message' => 'Rekod kematian ahli berjaya disimpan.',
                     'data' => $deathRecord,
                     'payment' => $payment,
-                    
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Payment processing error: ' . $e->getMessage());
@@ -1153,9 +1702,244 @@ class ApproveTuntutanController extends Controller
     /**
      * Store death record for Tanggungan (dependent)
      */
+    // public function storeDeathRecordTanggungan(Request $request)
+    // {
+
+    //     // Debug logging
+    //     \Log::info('storeDeathRecordTanggungan called', [
+    //         'user_id' => auth()->id(),
+    //         'all_inputs' => $request->all(),
+    //         'files' => $request->hasFile('sijil_kematian') ? 'has file' : 'no file'
+    //     ]);
+
+    //     // Check authentication
+    //     if (!auth()->check()) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Anda perlu login terlebih dahulu.'
+    //         ], 401);
+    //     }
+
+    //     $request->validate([
+    //         'tarikh_meninggal' => 'required|date',
+    //         'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'laporan_polis' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'maklumat_lain' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+    //         'catatan' => 'nullable|string',
+    //         'status_jenazah' => 'required|in:PROCESSING,SUCCESS',
+    //         'items' => 'array|required_if:status_jenazah,SUCCESS',
+    //         'total_amount' => 'nullable|numeric|min:0',
+    //         'lain_lain_text' => 'nullable|string'
+    //     ]);
+
+    //     $ajk = auth()->user();
+    //     $masjidId = $ajk->masjid_id;
+
+    //     // Get the Tanggungan record (the deceased)
+    //     $tanggungan = Tanggungan::findOrFail($request->tanggungan_id);
+
+    //     // Get IC number for filename (use tanggungan's IC)
+    //     $icNumber = preg_replace('/[^0-9]/', '', $tanggungan->ic_number ?? 'unknown');
+    //     $timestamp = now()->format('Ymd_His');
+
+    //     // Check if death record already exists for this Tanggungan
+    //     $existingRecord = TuntutanKhairat::where('tanggungan_id', $request->tanggungan_id)
+    //         ->whereIn('status', ['PAID', 'SUCCESS', 'APPROVED', 'PROCESSING'])
+    //         ->first();
+
+    //     if ($existingRecord) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Rekod kematian untuk tanggungan ini sudah wujud.'
+    //         ], 400);
+    //     }
+
+    //     // Upload files
+    //     $deathCertPath = null;
+    //     $policeReportPath = null;
+    //     $otherReportPath = null;
+
+    //     // Handle Sijil Kematian (Death Certificate)
+    //     if ($request->hasFile('sijil_kematian')) {
+    //         $file = $request->file('sijil_kematian');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "death_certificate_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/death_certificate');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $deathCertPath = 'khairat/death_certificate/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Laporan Polis (Police Report)
+    //     if ($request->hasFile('laporan_polis')) {
+    //         $file = $request->file('laporan_polis');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "police_report_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/police_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $policeReportPath = 'khairat/police_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     // Handle Maklumat Lain (Other Documents)
+    //     if ($request->hasFile('maklumat_lain')) {
+    //         $file = $request->file('maklumat_lain');
+    //         if ($file->isValid()) {
+    //             try {
+    //                 $filename = "other_report_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
+    //                 $uploadPath = public_path('khairat/other_report');
+    //                 if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+    //                 $file->move($uploadPath, $filename);
+    //                 $otherReportPath = 'khairat/other_report/' . $filename;
+    //             } catch (\Exception $e) {
+    //                 return response()->json([
+    //                     'success' => false,
+    //                     'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+    //                 ], 422);
+    //             }
+    //         }
+    //     }
+
+    //     $isSuccess = $request->status_jenazah === 'SUCCESS';
+    //     $tuntutanStatus = $isSuccess ? 'APPROVED' : 'PROCESSING';
+
+    //     // Use total_amount from items if provided, otherwise use default harga khairat
+    //     $amount = $request->total_amount ?? 0.00;
+
+    //     // Create death record for TANGGUNGAN
+    //     $deathRecord = TuntutanKhairat::create([
+    //         'masjid_id' => $masjidId,
+    //         'user_id' => auth()->id(),
+    //         'ahli_id' => $request->ahli_id_tanggungan,
+    //         'tanggungan_id' => $request->tanggungan_id,
+    //         'type' => 'TANGGUNGAN',
+    //         'date_death' => $request->tarikh_meninggal,
+    //         'status' => $tuntutanStatus,
+    //         'note' => $request->catatan,
+    //         'death_certificate' => $deathCertPath,
+    //         'police_report' => $policeReportPath,
+    //         'other_report' => $otherReportPath,
+    //         'approve_by' => auth()->id(),
+    //         'approved_at' => $isSuccess ? now() : null,
+    //         'amount' => $amount,
+    //     ]);
+
+    //     // If status is SUCCESS and items are provided, save the items to khairat_items table
+    //     if ($isSuccess && $request->has('items')) {
+    //         // Define the mapping between item values and their labels/descriptions
+    //         $itemMapping = [
+    //             'pengurusan_jenazah' => [
+    //                 'label' => 'Pengurusan Jenazah',
+    //                 'description' => 'Bayaran untuk pengurusan jenazah'
+    //             ],
+    //             'pengangkutan_jenazah' => [
+    //                 'label' => 'Van Jenazah',
+    //                 'description' => 'Bayaran untuk pengangkutan jenazah'
+    //             ],
+    //             'tanah_perkuburan' => [
+    //                 'label' => 'Gali Kubur',
+    //                 'description' => 'Bayaran untuk menggali kubur'
+    //             ],
+    //             'kain_kafan' => [
+    //                 'label' => 'Kain Kafan',
+    //                 'description' => 'Bayaran untuk kain kafan'
+    //             ],
+    //             'air_mandian' => [
+    //                 'label' => 'Air / Mandian',
+    //                 'description' => 'Bayaran untuk air dan keperluan mandian'
+    //             ],
+    //             'imam_bilal' => [
+    //                 'label' => 'Imam / Bilal',
+    //                 'description' => 'Bayaran untuk imam dan bilal'
+    //             ],
+    //             'lain_lain' => [
+    //                 'label' => 'Lain-lain',
+    //                 'description' => $request->lain_lain_text ?? 'Bayaran untuk lain-lain keperluan'
+    //             ],
+    //         ];
+
+    //         foreach ($request->items as $item) {
+    //             $amountField = 'amount_' . $item;
+    //             $itemAmount = $request->input($amountField, 0);
+
+    //             // Only save if amount is greater than 0
+    //             if ($itemAmount > 0) {
+    //                 $itemLabel = $itemMapping[$item]['label'] ?? ucfirst(str_replace('_', ' ', $item));
+    //                 $itemDescription = $itemMapping[$item]['description'] ?? 'Bayaran untuk ' . $itemLabel;
+
+    //                 KhairatItems::create([
+    //                     'tuntutan_id' => $deathRecord->id,
+    //                     'item_name' => $item,
+    //                     'item_label' => $itemLabel,
+    //                     'description' => $itemDescription,
+    //                     'amount' => $itemAmount
+    //                 ]);
+    //             }
+    //         }
+    //     }
+
+    //     // If status is SUCCESS, process payment and wallet deduction
+    //     if ($isSuccess) {
+    //         try {
+
+    //             $payment = Payment::create([
+    //                 'user_id' => $ajk->id,
+    //                 'masjid_id' => $masjidId,
+    //                 'name' => 'Pengeluaran Dana Khairat - Tanggungan',
+    //                 'amount' => $amount,
+    //                 'payment_method' => 'WALLET',
+    //                 'status' => 'PAID',
+    //                 'remarks' => 'Pembayaran tuntutan khairat untuk tanggungan ' . $tanggungan->nama . ' (No. IC: ' . $tanggungan->ic_number . ')',
+    //                 'type' => 'Khairat',
+    //                 'transaction_type' => 'transaction_out',
+    //                 'paid_at' => now(),
+    //                 'reference_type' => 'tuntutan_khairat',
+    //                 'reference_id' => $deathRecord->id,
+    //             ]);
+
+    //             $deathRecord->update(['status' => 'SUCCESS']);
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Rekod kematian tanggungan berhasil disimpan. Pembayaran telah diproses. (RM ' . number_format($amount, 2) . ' telah dikeluarkan dari dompet)',
+    //                 'data' => $deathRecord,
+    //                 'payment' => $payment,
+    //                 'items' => $deathRecord->items // This will work if you have the relationship defined
+    //             ]);
+    //         } catch (\Exception $e) {
+    //             \Log::error('Payment processing error: ' . $e->getMessage());
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Rekod disimpan tetapi gagal memproses pembayaran. Error: ' . $e->getMessage()
+    //             ], 500);
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Rekod kematian tanggungan berhasil disimpan. Menunggu kelulusan untuk pemprosesan pembayaran.',
+    //         'data' => $deathRecord
+    //     ]);
+    // }
+
     public function storeDeathRecordTanggungan(Request $request)
     {
-
         // Debug logging
         \Log::info('storeDeathRecordTanggungan called', [
             'user_id' => auth()->id(),
@@ -1172,6 +1956,8 @@ class ApproveTuntutanController extends Controller
         }
 
         $request->validate([
+            'tanggungan_id' => 'required|exists:tanggungan,id',
+            'ahli_id_tanggungan' => 'required|exists:ahli_kariah,id',
             'tarikh_meninggal' => 'required|date',
             'sijil_kematian' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'laporan_polis' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -1188,7 +1974,7 @@ class ApproveTuntutanController extends Controller
 
         // Get the Tanggungan record (the deceased)
         $tanggungan = Tanggungan::findOrFail($request->tanggungan_id);
-     
+
         // Get IC number for filename (use tanggungan's IC)
         $icNumber = preg_replace('/[^0-9]/', '', $tanggungan->ic_number ?? 'unknown');
         $timestamp = now()->format('Ymd_His');
@@ -1205,7 +1991,7 @@ class ApproveTuntutanController extends Controller
             ], 400);
         }
 
-        // Upload files
+        // Upload files to S3
         $deathCertPath = null;
         $policeReportPath = null;
         $otherReportPath = null;
@@ -1216,14 +2002,32 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "death_certificate_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/death_certificate');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $deathCertPath = 'khairat/death_certificate/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload death certificate to S3');
+                    }
+
+                    // Get the S3 URL
+                    $deathCertPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Death certificate (Tanggungan) uploaded to S3', [
+                        'tanggungan_id' => $request->tanggungan_id,
+                        'ahli_id' => $request->ahli_id_tanggungan,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $deathCertPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Death Certificate - Tanggungan): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik sijil kematian. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik sijil kematian ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -1235,14 +2039,32 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "police_report_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/police_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $policeReportPath = 'khairat/police_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload police report to S3');
+                    }
+
+                    // Get the S3 URL
+                    $policeReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Police report (Tanggungan) uploaded to S3', [
+                        'tanggungan_id' => $request->tanggungan_id,
+                        'ahli_id' => $request->ahli_id_tanggungan,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $policeReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Police Report - Tanggungan): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik laporan polis. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik laporan polis ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -1254,14 +2076,32 @@ class ApproveTuntutanController extends Controller
             if ($file->isValid()) {
                 try {
                     $filename = "other_report_tanggungan_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-                    $uploadPath = public_path('khairat/other_report');
-                    if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
-                    $file->move($uploadPath, $filename);
-                    $otherReportPath = 'khairat/other_report/' . $filename;
+
+                    // S3 path - using 'death_records' folder
+                    $s3Path = 'death_records/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload other documents to S3');
+                    }
+
+                    // Get the S3 URL
+                    $otherReportPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Other documents (Tanggungan) uploaded to S3', [
+                        'tanggungan_id' => $request->tanggungan_id,
+                        'ahli_id' => $request->ahli_id_tanggungan,
+                        'ic_number' => $icNumber,
+                        'path' => $s3Path,
+                        'url' => $otherReportPath
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Other Documents - Tanggungan): ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gagal memuat naik maklumat lain. Error: ' . $e->getMessage()
+                        'message' => 'Gagal memuat naik maklumat lain ke pelayan. Sila cuba lagi.'
                     ], 422);
                 }
             }
@@ -1348,7 +2188,6 @@ class ApproveTuntutanController extends Controller
         // If status is SUCCESS, process payment and wallet deduction
         if ($isSuccess) {
             try {
-                
                 $payment = Payment::create([
                     'user_id' => $ajk->id,
                     'masjid_id' => $masjidId,

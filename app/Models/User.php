@@ -250,4 +250,43 @@ public function getTanggunganCount()
     
     return $this->tanggungan ? $this->tanggungan->count() : 0;
 }
+
+/**
+ * Get all expired subscriptions for the user
+ */
+public function getExpiredSubscriptions()
+{
+    $now = Carbon::now();
+    
+    if ($this->role == 1) {
+        return SubscriptionsMasjid::where('user_id', $this->id)
+            ->where('status', 'active')
+            ->whereDate('end_date', '<', $now)
+            ->get();
+    } elseif ($this->role == 2) {
+        return SubscriptionsKariah::where('user_id', $this->id)
+            ->where('status', 'active')
+            ->whereDate('end_date', '<', $now)
+            ->get();
+    }
+    
+    return collect();
+}
+
+/**
+ * Check if user has expired subscriptions
+ */
+public function hasExpiredSubscriptions()
+{
+    return $this->getExpiredSubscriptions()->count() > 0;
+}
+
+/**
+ * Get the latest expired subscription
+ */
+public function getLatestExpiredSubscription()
+{
+    $subscriptions = $this->getExpiredSubscriptions();
+    return $subscriptions->sortByDesc('end_date')->first();
+}
 }

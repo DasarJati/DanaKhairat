@@ -213,7 +213,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('public.daftar.store', ['masjidId' => $masjid->id]) }}" method="POST"
+            <form action="{{ route('public.daftar.store', ['slug' => $masjid->slug]) }}" method="POST"
                 enctype="multipart/form-data" class="p-6" id="publicRegisterForm">
 
                 @csrf

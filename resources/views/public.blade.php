@@ -10,28 +10,30 @@
     <link rel="icon" href="{{ asset('asset/images/ekhairat.ico') }}" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-    /* Mobile menu styles */
-    #mobile-menu {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.5s ease-in-out;
-    }
-    
-    #mobile-menu.open {
-        max-height: 500px; /* Fallback, will be overridden by JS */
-    }
-    
-    #mobile-sahabat-dropdown {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease-in-out;
-    }
-    
-    #mobile-sahabat-dropdown.open {
-        max-height: 200px; /* Fallback, will be overridden by JS */
-    }
-</style>
+    <style>
+        /* Mobile menu styles */
+        #mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+
+        #mobile-menu.open {
+            max-height: 500px;
+            /* Fallback, will be overridden by JS */
+        }
+
+        #mobile-sahabat-dropdown {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        #mobile-sahabat-dropdown.open {
+            max-height: 200px;
+            /* Fallback, will be overridden by JS */
+        }
+    </style>
 </head>
 
 <body class="font-sans antialiased bg-white text-gray-900">
@@ -50,24 +52,9 @@
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#hero"
                         class="text-gray-700 hover:text-yellow-600 font-medium transition duration-300">Utama</a>
-                    <!-- <div class="relative group inline-block">
-                        <a href="#sahabat" class="text-gray-700 hover:text-yellow-600 font-medium transition duration-300 flex items-center">
-                            Sahabat
-                       
-                            <svg class="w-4 h-4 ml-1 transition-transform duration-300 group-hover:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </a> -->
-
-                    <!-- dropdown menu -->
-                    <!-- <div class="absolute left-0 top-full mt-2 w-44 bg-white shadow-lg rounded-lg opacity-0 invisible 
-                                    group-hover:opacity-100 group-hover:visible transition-all duration-300"> -->
-                    <!-- <a href="/checkstatus" class="block px-4 py-2 hover:bg-gray-100">Status Sahabat</a> -->
                     <a href="/checkstatus"
                         class="text-gray-700 hover:text-yellow-600 font-medium transition duration-300">Status
                         Sahabat</a>
-                    <!-- </div>
-                    </div> -->
                     <a href="#us"
                         class="text-gray-700 hover:text-yellow-600 font-medium transition duration-300">Tentang Kami</a>
                     <a href="#footer"
@@ -171,9 +158,110 @@
         </div>
     </section>
 
-    <!-- {{-- Top Sahabat Kariah --}}
-    @include('partials.sahabat') -->
+    {{-- Top Sahabat Kariah --}}
+    <section id="sahabat" class="py-12 sm:py-16 md:py-20 bg-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8 sm:mb-10 md:mb-12">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-center sm:text-left text-gray-900">
+                    Senarai Sahabat Kariah
+                </h2>
+                <div class="flex gap-3 sm:gap-4">
+                    <button id="prevBtn"
+                        class="p-3 sm:p-4 rounded-full bg-white shadow-lg hover:bg-yellow-500 hover:text-white transition-all duration-300 transform hover:scale-110 border border-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        &#10094;
+                    </button>
+                    <button id="nextBtn"
+                        class="p-3 sm:p-4 rounded-full bg-white shadow-lg hover:bg-yellow-500 hover:text-white transition-all duration-300 transform hover:scale-110 border border-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        &#10095;
+                    </button>
+                </div>
+            </div>
 
+            <!-- Carousel Container -->
+            <div class="relative overflow-hidden">
+                <div id="carouselTrack"
+                    class="flex gap-4 sm:gap-5 md:gap-6 transition-transform duration-500 ease-in-out">
+                    <!-- Cards -->
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/tnb.jpg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="TNB Mosque">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Masjid TNB Bangsar</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Bangsar, Kuala Lumpur<br>800 Orang Ahli
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/putra.jpg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="Putra Mosque">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Masjid Putra</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Putrajaya, Wilayah Persekutuan
+                                Putrajaya<br>1200 Orang Ahli</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/nur.jpg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="Nur Ramadhan">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Surau Nur Ramadhan</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Kajang, Sg Merab<br>450 Orang Ahli</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/kelantan.jpeg') }}"
+                            class="h-48 sm:h-52 md:h-56 w-full object-cover" alt="Andalusia Mosque">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Masjid Andalusia</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Kota Bharu, Kelantan<br>2000 Orang Ahli
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/shahalam.jpg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="Al-Mawaddah">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Surau Al-Mawaddah</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Sesyen 7, Shah Alam<br>150 Orang Ahli
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('images/sendayan.jpg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="Sri Sendayan">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Masjid Sri Sendayan</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Seremban, Negeri Sembilan<br>3000 Orang
+                                Ahli</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="carousel-item flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4 min-w-[280px] sm:min-w-[250px] bg-white rounded-2xl overflow-hidden shadow-lg border border-yellow-100">
+                        <img src="{{ asset('/images/pinang.jpeg') }}" class="h-48 sm:h-52 md:h-56 w-full object-cover"
+                            alt="Al-Muttaqin">
+                        <div class="p-4 sm:p-5 md:p-6">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">Surau Al-Muttaqin</h3>
+                            <p class="text-sm sm:text-base text-gray-600 mt-2">Lilitan Sg Ara, Penang<br>200 Orang Ahli
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     {{-- How It Works Section --}}
     <section id="us" class="py-24 bg-gradient-to-br from-gray-50 to-yellow-50/30">
@@ -379,126 +467,206 @@
     </footer>
 
     <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        // Element Selector
-        const mobileBtn = document.getElementById('mobile-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuIcon = document.getElementById('menu-icon');
-        
-        const sahabatBtn = document.getElementById('mobile-sahabat-btn');
-        const sahabatDropdown = document.getElementById('mobile-sahabat-dropdown');
-        const sahabatArrow = document.getElementById('sahabat-arrow');
+        document.addEventListener("DOMContentLoaded", () => {
+            // Mobile Menu Script
+            const mobileBtn = document.getElementById('mobile-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuIcon = document.getElementById('menu-icon');
 
-        // Function to update mobile menu height
-        function updateMobileMenuHeight() {
-            if (mobileMenu.classList.contains('open')) {
-                // Calculate total height including dropdown if open
-                let totalHeight = mobileMenu.scrollHeight;
-                if (sahabatDropdown && sahabatDropdown.classList.contains('open')) {
-                    totalHeight += sahabatDropdown.scrollHeight;
+            const sahabatBtn = document.getElementById('mobile-sahabat-btn');
+            const sahabatDropdown = document.getElementById('mobile-sahabat-dropdown');
+            const sahabatArrow = document.getElementById('sahabat-arrow');
+
+            function updateMobileMenuHeight() {
+                if (mobileMenu.classList.contains('open')) {
+                    let totalHeight = mobileMenu.scrollHeight;
+                    if (sahabatDropdown && sahabatDropdown.classList.contains('open')) {
+                        totalHeight += sahabatDropdown.scrollHeight;
+                    }
+                    mobileMenu.style.maxHeight = totalHeight + "px";
                 }
-                mobileMenu.style.maxHeight = totalHeight + "px";
             }
-        }
 
-        // Function to toggle main menu
-        function toggleMobileMenu() {
-            const isOpen = mobileMenu.classList.contains('open');
-            
-            if (!isOpen) {
-                // Open menu
-                mobileMenu.classList.add('open');
-                mobileMenu.style.maxHeight = mobileMenu.scrollHeight + "px";
-                menuIcon.classList.remove('fa-bars');
-                menuIcon.classList.add('fa-times');
-            } else {
-                // Close menu
-                mobileMenu.classList.remove('open');
-                mobileMenu.style.maxHeight = "0px";
-                menuIcon.classList.remove('fa-times');
-                menuIcon.classList.add('fa-bars');
-                
-                // Also close dropdown if open
-                if (sahabatDropdown && sahabatDropdown.classList.contains('open')) {
+            function toggleMobileMenu() {
+                const isOpen = mobileMenu.classList.contains('open');
+
+                if (!isOpen) {
+                    mobileMenu.classList.add('open');
+                    mobileMenu.style.maxHeight = mobileMenu.scrollHeight + "px";
+                    menuIcon.classList.remove('fa-bars');
+                    menuIcon.classList.add('fa-times');
+                } else {
+                    mobileMenu.classList.remove('open');
+                    mobileMenu.style.maxHeight = "0px";
+                    menuIcon.classList.remove('fa-times');
+                    menuIcon.classList.add('fa-bars');
+
+                    if (sahabatDropdown && sahabatDropdown.classList.contains('open')) {
+                        sahabatDropdown.classList.remove('open');
+                        sahabatDropdown.style.maxHeight = "0px";
+                        if (sahabatArrow) sahabatArrow.style.transform = "rotate(0deg)";
+                    }
+                }
+            }
+
+            function toggleSahabatDropdown(e) {
+                if (e) e.preventDefault();
+
+                const isOpen = sahabatDropdown.classList.contains('open');
+
+                if (!isOpen) {
+                    sahabatDropdown.classList.add('open');
+                    sahabatDropdown.style.maxHeight = sahabatDropdown.scrollHeight + "px";
+                    if (sahabatArrow) sahabatArrow.style.transform = "rotate(180deg)";
+
+                    if (mobileMenu.classList.contains('open')) {
+                        setTimeout(() => {
+                            mobileMenu.style.maxHeight = (mobileMenu.scrollHeight + sahabatDropdown
+                                .scrollHeight) + "px";
+                        }, 10);
+                    }
+                } else {
                     sahabatDropdown.classList.remove('open');
                     sahabatDropdown.style.maxHeight = "0px";
                     if (sahabatArrow) sahabatArrow.style.transform = "rotate(0deg)";
+
+                    if (mobileMenu.classList.contains('open')) {
+                        setTimeout(() => {
+                            mobileMenu.style.maxHeight = mobileMenu.scrollHeight + "px";
+                        }, 10);
+                    }
                 }
             }
-        }
 
-        // Function to toggle sahabat dropdown
-        function toggleSahabatDropdown(e) {
-            if (e) e.preventDefault();
-            
-            const isOpen = sahabatDropdown.classList.contains('open');
-            
-            if (!isOpen) {
-                // Open dropdown
-                sahabatDropdown.classList.add('open');
-                sahabatDropdown.style.maxHeight = sahabatDropdown.scrollHeight + "px";
-                if (sahabatArrow) sahabatArrow.style.transform = "rotate(180deg)";
-                
-                // Update main menu height to accommodate dropdown
-                if (mobileMenu.classList.contains('open')) {
-                    setTimeout(() => {
-                        mobileMenu.style.maxHeight = (mobileMenu.scrollHeight + sahabatDropdown.scrollHeight) + "px";
-                    }, 10);
-                }
-            } else {
-                // Close dropdown
-                sahabatDropdown.classList.remove('open');
-                sahabatDropdown.style.maxHeight = "0px";
-                if (sahabatArrow) sahabatArrow.style.transform = "rotate(0deg)";
-                
-                // Update main menu height
-                if (mobileMenu.classList.contains('open')) {
-                    setTimeout(() => {
-                        mobileMenu.style.maxHeight = mobileMenu.scrollHeight + "px";
-                    }, 10);
-                }
+            if (mobileBtn) {
+                mobileBtn.addEventListener('click', toggleMobileMenu);
             }
-        }
 
-        // Add click event for mobile menu button
-        if (mobileBtn) {
-            mobileBtn.addEventListener('click', toggleMobileMenu);
-        }
+            if (sahabatBtn) {
+                sahabatBtn.addEventListener('click', toggleSahabatDropdown);
+            }
 
-        // Add click event for sahabat button
-        if (sahabatBtn) {
-            sahabatBtn.addEventListener('click', toggleSahabatDropdown);
-        }
+            const mobileLinks = document.querySelectorAll('.mobile-link');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    if (e.target.closest('#mobile-sahabat-btn')) {
+                        return;
+                    }
+                    if (mobileMenu.classList.contains('open')) {
+                        toggleMobileMenu();
+                    }
+                });
+            });
 
-        // Close menu when any mobile link is clicked (except sahabat button)
-        const mobileLinks = document.querySelectorAll('.mobile-link');
-        mobileLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                // Don't close if clicking the sahabat button or its children
-                if (e.target.closest('#mobile-sahabat-btn')) {
-                    return;
-                }
-                // Close menu
-                if (mobileMenu.classList.contains('open')) {
-                    toggleMobileMenu();
+            mobileMenu.style.maxHeight = "0px";
+            mobileMenu.classList.remove('open');
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    if (mobileMenu.classList.contains('open')) {
+                        toggleMobileMenu();
+                    }
                 }
             });
-        });
 
-        // Initialize - ensure menu is closed on page load
-        mobileMenu.style.maxHeight = "0px";
-        mobileMenu.classList.remove('open');
+            // Carousel Script
+            function initCarousel() {
+        const track = document.getElementById('carouselTrack');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const items = document.querySelectorAll('.carousel-item');
         
-        // Fix for window resize - close mobile menu on desktop view
-        window.addEventListener('resize', function() {
-            if (window.innerWidth >= 768) { // md breakpoint
-                if (mobileMenu.classList.contains('open')) {
-                    toggleMobileMenu();
-                }
+        if (!track || !items.length) {
+            console.log('Carousel elements not found');
+            return;
+        }
+        
+        let currentIndex = 0;
+        let itemsPerView = getItemsPerView();
+        const totalItems = items.length;
+        
+        function getItemsPerView() {
+            const width = window.innerWidth;
+            if (width < 640) { // mobile
+                return 1;
+            } else if (width < 768) { // small tablet
+                return 1;
+            } else if (width < 1024) { // tablet
+                return 2;
+            } else if (width < 1280) { // laptop
+                return 3;
+            } else { // desktop
+                return 4;
             }
+        }
+        
+        function getMaxIndex() {
+            return Math.max(0, totalItems - itemsPerView);
+        }
+        
+        function updateCarousel() {
+            itemsPerView = getItemsPerView();
+            const maxIndex = getMaxIndex();
+            
+            // Ensure currentIndex is within bounds
+            if (currentIndex > maxIndex) {
+                currentIndex = maxIndex;
+            }
+            
+            const itemWidth = items[0].offsetWidth;
+            const gap = window.innerWidth < 640 ? 16 : window.innerWidth < 768 ? 20 : 24;
+            const offset = currentIndex * (itemWidth + gap);
+            track.style.transform = `translateX(-${offset}px)`;
+            
+            // Update button states
+            if (prevBtn) {
+                prevBtn.disabled = currentIndex === 0;
+                prevBtn.style.opacity = currentIndex === 0 ? '0.5' : '1';
+                prevBtn.style.cursor = currentIndex === 0 ? 'not-allowed' : 'pointer';
+            }
+            if (nextBtn) {
+                const maxIdx = getMaxIndex();
+                nextBtn.disabled = currentIndex >= maxIdx;
+                nextBtn.style.opacity = currentIndex >= maxIdx ? '0.5' : '1';
+                nextBtn.style.cursor = currentIndex >= maxIdx ? 'not-allowed' : 'pointer';
+            }
+        }
+        
+        function nextSlide() {
+            const maxIndex = getMaxIndex();
+            if (currentIndex < maxIndex) {
+                currentIndex++;
+                updateCarousel();
+            }
+        }
+        
+        function prevSlide() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCarousel();
+            }
+        }
+        
+        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+        
+        // Handle resize with debounce
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(updateCarousel, 200);
         });
-    });
-</script>
+        
+        // Initialize
+        setTimeout(updateCarousel, 100);
+        window.addEventListener('load', function() {
+            setTimeout(updateCarousel, 200);
+        });
+    }
+    
+    initCarousel();
+        });
+    </script>
 </body>
 
 </html>

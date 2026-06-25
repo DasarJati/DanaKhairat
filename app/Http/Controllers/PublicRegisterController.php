@@ -111,23 +111,30 @@ class PublicRegisterController extends Controller
         ]);
     }
 
-    public function store(Request $request, $masjidId = null)
+    public function store(Request $request, $slug)
     {
-        // Handle case where masjid_id is in request instead of route
-        if (!$masjidId && $request->has('masjid_id')) {
-            $masjidId = $request->masjid_id;
+        // Try to find masjid by slug first
+        $masjid = Masjid::where('slug', $slug)->first();
+
+        // If not found by slug, try by name
+        if (!$masjid) {
+            $masjid = Masjid::where('nama', 'LIKE', $slug)->first();
         }
 
-        $masjid = Masjid::findOrFail($masjidId);
+        if (!$masjid) {
+            // If still not found, try to find by ID (backward compatibility)
+            $masjid = Masjid::find($slug);
+        }
 
-        // Get HargaKhairat
-        $hargaKhairat = HargaKhairat::where('masjid_id', $masjid->id)->first();
-        $yuranPendaftaran = $hargaKhairat ? $hargaKhairat->yuran_pendaftaran : 0;
-        $bayaranTahunan   = $hargaKhairat ? $hargaKhairat->bayaran_tahunan  : 0;
-        $jumlahBayaran    = $yuranPendaftaran + $bayaranTahunan;
+        if (!$masjid) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Masjid tidak dijumpai. Sila semak pautan anda.'
+            ], 404);
+        }
 
         // ── 1. Basic field + file validation ────────────────────────────
-        $validator = \Validator::make($request->all(), [
+        $validated = $request->validate([
             'nama'       => 'required|string',
             'ic_number'  => 'required|string|unique:user_register,ic_number',
             'email'      => 'required|email|unique:user_register,email',
@@ -146,14 +153,7 @@ class PublicRegisterController extends Controller
             'resit_file.max'     => 'Saiz fail resit tidak boleh melebihi 5MB.',
         ]);
 
-
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors()->first(),
-            ], 422);
-        }
+        
 
         // ── 2. Validate waris IC (format + age ≥ 18) ────────────────────
         if ($request->filled('waris_ic')) {
@@ -179,28 +179,50 @@ class PublicRegisterController extends Controller
             $umur = now()->diffInYears(\Carbon\Carbon::parse($request->tarikh_lahir), true);
         }
 
-        // ── 4. Handle receipt upload BEFORE creating user ────────────────
+        // ── 4. Get HargaKhairat for this masjid ─────────────────────────
+        $hargaKhairat = HargaKhairat::where('masjid_id', $masjid->id)->first();
+        $yuranPendaftaran = $hargaKhairat ? $hargaKhairat->yuran_pendaftaran : 0;
+        $bayaranTahunan   = $hargaKhairat ? $hargaKhairat->bayaran_tahunan  : 0;
+        $jumlahBayaran    = $yuranPendaftaran + $bayaranTahunan;
+
+        // ── 5. Handle receipt upload to AWS S3 ───────────────────────────
         $resitPath = null;
+        $s3Path = null; // Define this for cleanup on failure
+
         if ($request->hasFile('resit_file')) {
             $file = $request->file('resit_file');
 
             if ($file->isValid()) {
                 try {
+                    // Generate filename
                     $timestamp = now()->format('Ymd_His');
                     $icNumber  = preg_replace('/[^0-9]/', '', $request->ic_number ?? '000000');
                     $filename  = "resit_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
 
-                    $uploadPath = public_path('pembayaran/resit_pembayaran');
-                    if (!file_exists($uploadPath)) {
-                        mkdir($uploadPath, 0777, true);
+                    // S3 path - same folder structure as before
+                    $s3Path = 'register/payment_receipt/' . $filename;
+
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload file to S3');
                     }
 
-                    $file->move($uploadPath, $filename);
-                    $resitPath = 'pembayaran/resit_pembayaran/' . $filename;
+                    // Get the S3 URL
+                    $resitPath = Storage::disk('s3')->url($s3Path);
+
+                    \Log::info('Receipt uploaded to S3', [
+                        'path' => $s3Path,
+                        'url' => $resitPath,
+                        'user_ic' => $request->ic_number,
+                        'masjid_id' => $masjid->id
+                    ]);
                 } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error: ' . $e->getMessage());
                     return response()->json([
                         'success' => false,
-                        'errors'  => 'Gagal memuat naik resit pembayaran. Sila cuba lagi.',
+                        'errors'  => 'Gagal memuat naik resit pembayaran ke pelayan. Sila cuba lagi.',
                     ], 422);
                 }
             } else {
@@ -211,42 +233,70 @@ class PublicRegisterController extends Controller
             }
         }
 
-        // ── 5. Create User with receipt_path included directly
-        $user = UserRegister::create([
-            'nama' => strtoupper($request->nama ?? ''),
-            'ic_number' => $request->ic_number ?? '',
-            'tarikh_lahir' => $request->tarikh_lahir ?? null,
-            'umur' => $umur,
-            'jantina' => $jantina,
-            'bangsa' => strtoupper($request->bangsa ?? 'MELAYU'),
-            'statususer' => $request->statususer ? strtoupper($request->statususer) : null,
-            'alamat' => $request->alamat ?? '',
-            'telefon_bimbit' => $request->telefon_bimbit ?? '',
-            'email' => $request->email ?? '',
-            'password' => $request->password ? bcrypt($request->password) : bcrypt('password123'),
-            'masjid_id' => $masjid->id,
-            'agree_terms' => $request->has('agree_terms') ? 1 : 0,
-            'approval_status' => 'PENDING',
-            'Paid' => 'PENDING',
-            'amount' => $jumlahBayaran,
-            'ahli_type' => $request->ahli_type,
-            'waris_nama' => $request->waris_nama ? strtoupper($request->waris_nama) : null,
-            'waris_ic' => $request->waris_ic ?? null,
-            'waris_alamat' => $request->waris_alamat ?? null,
-            'waris_telefon_pejabat' => $request->waris_telefon_pejabat ?? null,
-            'waris_telefon_bimbit' => $request->waris_telefon_bimbit ?? null,
-            'receipt_path' => $resitPath,
-        ]);
+        // ── 6. Create User with receipt_path included directly ───────────
+        DB::beginTransaction();
 
-        // Log success
-        \Log::info('User registered with receipt', ['user_id' => $user->id, 'receipt_path' => $resitPath]);
+        try {
+            $user = UserRegister::create([
+                'nama' => strtoupper($request->nama ?? ''),
+                'ic_number' => $request->ic_number ?? '',
+                'tarikh_lahir' => $request->tarikh_lahir ?? null,
+                'umur' => $umur,
+                'jantina' => $jantina,
+                'bangsa' => strtoupper($request->bangsa ?? 'MELAYU'),
+                'statususer' => $request->statususer ? strtoupper($request->statususer) : null,
+                'alamat' => $request->alamat ?? '',
+                'telefon_bimbit' => $request->telefon_bimbit ?? '',
+                'email' => $request->email ?? '',
+                'password' => $request->password ? bcrypt($request->password) : bcrypt('password123'),
+                'masjid_id' => $masjid->id,
+                'agree_terms' => $request->has('agree_terms') ? 1 : 0,
+                'approval_status' => 'PENDING',
+                'Paid' => 'PENDING',
+                'amount' => $jumlahBayaran,
+                'ahli_type' => $request->ahli_type,
+                'waris_nama' => $request->waris_nama ? strtoupper($request->waris_nama) : null,
+                'waris_ic' => $request->waris_ic ?? null,
+                'waris_alamat' => $request->waris_alamat ?? null,
+                'waris_telefon_pejabat' => $request->waris_telefon_pejabat ?? null,
+                'waris_telefon_bimbit' => $request->waris_telefon_bimbit ?? null,
+                'receipt_path' => $resitPath,
+            ]);
 
-        // JSON Response (for AJAX / SweetAlert)
-        return response()->json([
-            'success' => true,
-            'message' => 'Permohonan anda telah dihantar! Kami akan memeriksa dalam 1-3 hari.',
-            'redirect_url' => route('success-daftar'),
-        ]);
+            DB::commit();
+
+            // Log success
+            \Log::info('User registered with S3 receipt', [
+                'user_id' => $user->id,
+                'receipt_path' => $resitPath,
+                'receipt_url' => $resitPath
+            ]);
+
+            // JSON Response (for AJAX / SweetAlert)
+            return response()->json([
+                'success' => true,
+                'message' => 'Permohonan anda telah dihantar! Kami akan memeriksa dalam 1-3 hari.',
+                'redirect_url' => route('success-daftar'),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            // Delete uploaded file from S3 if transaction fails
+            if ($resitPath && $s3Path) {
+                try {
+                    Storage::disk('s3')->delete($s3Path);
+                    \Log::info('Deleted S3 file after transaction rollback', ['path' => $s3Path]);
+                } catch (\Exception $deleteError) {
+                    \Log::error('Failed to delete S3 file: ' . $deleteError->getMessage());
+                }
+            }
+
+            \Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'errors' => 'Pendaftaran gagal: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

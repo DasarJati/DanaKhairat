@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+
 use App\Models\masjid;
 use App\Models\HargaKhairat;
 use App\Models\Bank;
@@ -12,7 +15,7 @@ use App\Models\PolicyMasjid;
 use App\Models\SubscriptionsMasjid;
 use App\Models\PackageOrders;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+
 
 class AjkMasjidController extends Controller
 {
@@ -168,75 +171,114 @@ class AjkMasjidController extends Controller
     }
 
     public function updateBank(Request $request)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        if ($user->role !== 1) {
-            abort(403);
-        }
-
-        $request->validate([
-            'nama_bank' => 'required|string|max:100',
-            'nama_akaun' => 'required|string|max:255',
-            'no_akaun' => 'required|string|max:50',
-            'qr_path' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Get old bank record FIRST before any changes
-            $oldBank = Bank::where('masjid_id', $user->masjid_id)->first();
-
-            $bankData = [
-                'masjid_id' => $user->masjid_id,
-                'nama_bank' => $request->nama_bank,
-                'nama_akaun' => $request->nama_akaun,
-                'no_akaun' => $request->no_akaun,
-            ];
-
-            // Handle QR code upload
-            if ($request->hasFile('qr_path')) {
-                $file = $request->file('qr_path');
-
-                // Create directory if it doesn't exist
-                $uploadPath = public_path('uploads/qr_ajk');
-                if (!file_exists($uploadPath)) {
-                    mkdir($uploadPath, 0777, true);
-                }
-
-                // Generate unique filename
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-                // Move file to uploads/qr_ajk directory
-                $file->move($uploadPath, $filename);
-
-                // Save path in database (relative path from public)
-                $bankData['qr_path'] = 'uploads/qr_ajk/' . $filename;
-
-                // Delete old QR code if exists (NOW using the $oldBank we got earlier)
-                if ($oldBank && $oldBank->qr_path) {
-                    $oldFilePath = public_path($oldBank->qr_path);
-                    if (file_exists($oldFilePath)) {
-                        unlink($oldFilePath);
-                    }
-                }
-            }
-
-            Bank::updateOrCreate(
-                ['masjid_id' => $user->masjid_id],
-                $bankData
-            );
-
-            DB::commit();
-
-            return redirect()->route('masjid.index', ['tab' => 'bank'])
-                ->with('success', 'Maklumat bank berjaya dikemaskini.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal mengemaskini maklumat bank: ' . $e->getMessage());
-        }
+    if ($user->role !== 1) {
+        abort(403);
     }
+
+    $request->validate([
+        'nama_bank' => 'required|string|max:100',
+        'nama_akaun' => 'required|string|max:255',
+        'no_akaun' => 'required|string|max:50',
+        'qr_path' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        // Get old bank record FIRST before any changes
+        $oldBank = Bank::where('masjid_id', $user->masjid_id)->first();
+
+        $bankData = [
+            'masjid_id' => $user->masjid_id,
+            'nama_bank' => $request->nama_bank,
+            'nama_akaun' => $request->nama_akaun,
+            'no_akaun' => $request->no_akaun,
+        ];
+
+        // Handle QR code upload to S3
+        if ($request->hasFile('qr_path')) {
+            $file = $request->file('qr_path');
+            
+            if ($file->isValid()) {
+                try {
+                    // Generate unique filename
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    
+                    // S3 path - using 'images/bank_masjid' folder
+                    $s3Path = 'images/bank_masjid/' . $filename;
+                    
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+                    
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload QR code to S3');
+                    }
+                    
+                    // Get the S3 URL
+                    $qrPath = Storage::disk('s3')->url($s3Path);
+                    
+                    \Log::info('Bank QR code uploaded to S3', [
+                        'masjid_id' => $user->masjid_id,
+                        'path' => $s3Path,
+                        'url' => $qrPath
+                    ]);
+                    
+                    // Save path in database (S3 URL)
+                    $bankData['qr_path'] = $qrPath;
+
+                    // Delete old QR code from S3 if exists
+                    if ($oldBank && $oldBank->qr_path) {
+                        try {
+                            $oldPath = $oldBank->qr_path;
+                            
+                            // If it's a full URL, extract the path
+                            if (filter_var($oldPath, FILTER_VALIDATE_URL)) {
+                                $parsedUrl = parse_url($oldPath);
+                                $oldPath = ltrim($parsedUrl['path'], '/');
+                            }
+                            
+                            // Delete from S3
+                            if (Storage::disk('s3')->exists($oldPath)) {
+                                Storage::disk('s3')->delete($oldPath);
+                                \Log::info('Old bank QR code deleted from S3', [
+                                    'masjid_id' => $user->masjid_id,
+                                    'path' => $oldPath
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to delete old QR code from S3: ' . $e->getMessage());
+                            // Continue execution even if delete fails
+                        }
+                    }
+                    
+                } catch (\Exception $e) {
+                    \Log::error('S3 Upload Error (Bank QR): ' . $e->getMessage());
+                    throw new \Exception('Gagal memuat naik kod QR ke pelayan. Sila cuba lagi.');
+                }
+            } else {
+                throw new \Exception('Fail QR tidak sah atau rosak. Sila pilih fail yang lain.');
+            }
+        }
+
+        Bank::updateOrCreate(
+            ['masjid_id' => $user->masjid_id],
+            $bankData
+        );
+
+        DB::commit();
+
+        return redirect()->route('masjid.index', ['tab' => 'bank'])
+            ->with('success', 'Maklumat bank berjaya dikemaskini.');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Bank update failed: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Gagal mengemaskini maklumat bank: ' . $e->getMessage());
+    }
+}
 
 // You might also want to add this helper function in your controller or create a trait
 
@@ -341,51 +383,144 @@ class AjkMasjidController extends Controller
     }
 
     public function updateImage(Request $request)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
  
-        if ($user->role !== 1) {
-            abort(403);
+    if ($user->role !== 1) {
+        abort(403);
+    }
+ 
+    $request->validate([
+        'image_path' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+    ]);
+ 
+    try {
+        DB::beginTransaction();
+ 
+        $masjid = Masjid::find($user->masjid_id);
+        
+        if (!$masjid) {
+            throw new \Exception('Masjid tidak dijumpai.');
         }
  
-        $request->validate([
-            'image_path' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
- 
-        try {
-            DB::beginTransaction();
- 
-            $masjid = Masjid::find($user->masjid_id);
- 
-            // Delete old image if it exists
-            if ($masjid->image_path) {
-                $oldFilePath = public_path($masjid->image_path);
-                if (file_exists($oldFilePath)) {
-                    unlink($oldFilePath);
+        // Delete old image from S3 if it exists
+        if ($masjid->image_path) {
+            try {
+                // Extract the S3 path from the stored URL or path
+                $oldPath = $masjid->image_path;
+                
+                // If it's a full URL, extract the path
+                if (filter_var($oldPath, FILTER_VALIDATE_URL)) {
+                    $parsedUrl = parse_url($oldPath);
+                    $oldPath = ltrim($parsedUrl['path'], '/');
                 }
+                
+                // Remove the bucket name from path if exists
+                $oldPath = str_replace('images/masjid/', 'images/masjid/', $oldPath);
+                
+                // Delete from S3
+                if (Storage::disk('s3')->exists($oldPath)) {
+                    Storage::disk('s3')->delete($oldPath);
+                    \Log::info('Old masjid image deleted from S3', [
+                        'masjid_id' => $masjid->id,
+                        'path' => $oldPath
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to delete old image from S3: ' . $e->getMessage());
+                // Continue execution even if delete fails
             }
+        }
  
-            // Save new image to public/masjid/image
-            $uploadPath = public_path('masjid/image');
-            if (!file_exists($uploadPath)) {
-                mkdir($uploadPath, 0777, true);
-            }
- 
-            $file = $request->file('image_path');
+        // Upload new image to S3
+        $file = $request->file('image_path');
+        
+        if ($file->isValid()) {
+            // Generate unique filename
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move($uploadPath, $filename);
+            
+            // S3 path - using 'images/masjid' folder
+            $s3Path = 'images/masjid/' . $filename;
+            
+            // Upload to S3
+            $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+            
+            if (!$uploaded) {
+                throw new \Exception('Failed to upload image to S3');
+            }
+            
+            // Get the S3 URL
+            $imagePath = Storage::disk('s3')->url($s3Path);
+            
+            \Log::info('Masjid image uploaded to S3', [
+                'masjid_id' => $masjid->id,
+                'path' => $s3Path,
+                'url' => $imagePath
+            ]);
  
+            // Update masjid with new image path
             $masjid->update([
-                'image_path' => 'masjid/image/' . $filename,
+                'image_path' => $imagePath,
             ]);
  
             DB::commit();
  
             return redirect()->route('masjid.index', ['tab' => 'masjid'])
                 ->with('success', 'Gambar masjid berjaya dikemaskini.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal mengemaskini gambar masjid: ' . $e->getMessage());
+        } else {
+            throw new \Exception('Fail imej tidak sah atau rosak.');
         }
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Masjid image update failed: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Gagal mengemaskini gambar masjid: ' . $e->getMessage());
     }
+}
+
+/**
+ * Upload file to S3
+ */
+private function uploadToS3($file, $folder, $filename = null)
+{
+    if (!$filename) {
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    }
+    
+    $path = $folder . '/' . $filename;
+    $uploaded = Storage::disk('s3')->put($path, file_get_contents($file), 'public');
+    
+    if (!$uploaded) {
+        throw new \Exception('Failed to upload file to S3');
+    }
+    
+    return [
+        'path' => $path,
+        'url' => Storage::disk('s3')->url($path)
+    ];
+}
+
+/**
+ * Delete file from S3
+ */
+private function deleteFromS3($path)
+{
+    if (empty($path)) {
+        return;
+    }
+    
+    // If it's a full URL, extract the path
+    if (filter_var($path, FILTER_VALIDATE_URL)) {
+        $parsedUrl = parse_url($path);
+        $path = ltrim($parsedUrl['path'], '/');
+    }
+    
+    if (Storage::disk('s3')->exists($path)) {
+        return Storage::disk('s3')->delete($path);
+    }
+    
+    return false;
+}
+
+
 }

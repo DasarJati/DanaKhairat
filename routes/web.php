@@ -40,14 +40,15 @@ Route::get('/pakej', function () {
     return view('register.pakej');
 })->name('pakej');
 
-Route::get('/', function () {
-    return redirect()->route('public');
-});
 
-// terus load view tanpa controller
-Route::get('/public', function () {
+Route::get('/', function () {
     return view('public');
 })->name('public');
+
+// terus load view tanpa controller
+// Route::get('/public', function () {
+//     return view('public');
+// })->name('public');
 
 Route::get('/pilihan', function () {
     return view('pic.option');
@@ -240,7 +241,7 @@ Route::prefix('daftar')->name('public.daftar.')->group(function () {
     Route::get('/{masjidName}', [PublicRegisterController::class, 'create'])->name('create');
 
     // Store registration
-    Route::post('/{masjidId}', [PublicRegisterController::class, 'store'])->name('store');
+    Route::post('/{slug}', [PublicRegisterController::class, 'store'])->name('store');
 
     // Generate shareable link (AJAX endpoint)
     Route::post('/generate-link', [PublicRegisterController::class, 'generateShareableLink'])->name('generate-link');
@@ -338,4 +339,17 @@ Route::get('/show-log', function () {
     return '<pre>' .
         implode('', array_slice($lines, -100))
         . '</pre>';
+});
+
+Route::get('/test-mailtrap', function () {
+    try {
+        Mail::raw('This is a test email from Dana Khairat system. Time: ' . now(), function($message) {
+            $message->to('muhdsyazwan552@gmail.com')
+                    ->subject('Test Mailtrap Connection');
+        });
+        
+        return "✅ Email sent successfully! Check your Mailtrap inbox.";
+    } catch (\Exception $e) {
+        return "❌ Error: " . $e->getMessage();
+    }
 });
