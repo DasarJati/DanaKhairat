@@ -21,7 +21,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard eKhairat</title>
     {{-- Tailwind CDN (WAJIB kalau tak guna Vite/layout) --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">

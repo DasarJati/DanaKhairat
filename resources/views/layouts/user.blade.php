@@ -6,7 +6,7 @@
     <title>@yield('title', 'e-Khairat')</title>
 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     
     <!-- Alpine.js -->
     <script src="//unpkg.com/alpinejs" defer></script>
@@ -126,7 +126,7 @@
     <title>@yield('title', 'e-Khairat')</title>
 
     <!-- Tailwind CSS CDN for quick test -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    
 
     Font Awesome CDN
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
