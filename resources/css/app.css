@@ -1,4 +1,12 @@
 @import 'tailwindcss';
+@source "../node_modules/@my-company/ui-lib"; /* Tambah laluan */
+@source not "./src/components/legacy"; /* Kecualikan laluan */
+
+/* Import Tailwind's base styles */
+/* @import "tailwindcss/preflight"; */
+
+/* Import Tailwind's utilities */
+@import "tailwindcss/utilities";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -8,4 +16,39 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ─── DARK OCEAN THEME (HIJAU KEBIRUAN / TEAL) ─── */
+    /* Nota: Nama class 'gold' dikekalkan tetapi ditukar kepada palet Dark Ocean/Hijau */
+    --color-gold-50: #f0fdfa;   /* Hijau mint sangat cair */
+    --color-gold-100: #ccfbf1;  /* Hijau teal lembut */
+    --color-gold-200: #99f6e4;  /* Hijau laut cerah */
+    --color-gold-300: #5eead4;  /* Teal segar */
+    --color-gold-400: #2dd4bf;  /* Vibrant ocean teal */
+    --color-gold-500: #14b8a6;  /* Deep teal utama */
+    --color-gold-600: #0d9488;  /* Hijau gelap ocean */
+    --color-gold-700: #0f766e;  /* Deep ocean dark */
+    --color-gold-800: #115e59;  /* Deep forest/ocean */
+    --color-gold-900: #134e4a;  /* Sangat gelap (Sesuai untuk teks/bg) */
+
+    /* Warna Utama & Sekunder Moden (Format OKLCH) */
+    --color-primary: oklch(0.48 0.15 190);      /* Deep Cyan/Ocean Blue */
+    --color-secondary: oklch(0.60 0.16 165);    /* Ocean Green / Teal */
+
+    /* Kombinasi Gradient untuk Efek "Dark Ocean" */
+    --background-image-gradient-ocean: linear-gradient(to right, var(--color-gold-900), var(--color-gold-700));
+
+    /* Warna Latar Belakang & Elemen Neutral */
+    --color-bg-main: oklch(0.12 0.015 220);     /* Latar belakang gelap dengan tint biru-hijau */
+    --color-surface: oklch(0.16 0.012 220);     /* Warna kad/kontena gelap */
+    --color-card-border: oklch(0.25 0.02 200);   /* Border halus bertemakan ocean */
+
+    /* Warna Teks */
+    --color-text-main: oklch(0.95 0.005 200);   /* Teks cerah yang selesa dibaca */
+    --color-text-muted: oklch(0.70 0.01 200);
+
+    /* Tentukan font */
+    --font-display: "Inter", system-ui, sans-serif;
+
+    /* Tentukan breakpoint baru */
+    --breakpoint-3xl: 1920px;
 }

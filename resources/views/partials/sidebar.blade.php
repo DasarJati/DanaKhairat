@@ -1,3 +1,5 @@
+
+
 <aside
     class="bg-gradient-to-b from-white to-gray-50 h-screen w-64 shadow-xl flex flex-col border-r border-gray-100 overflow-y-auto no-scrollbar">
     <!-- Header with logo and close button for mobile -->
