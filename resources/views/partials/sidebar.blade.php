@@ -163,6 +163,15 @@
                         <span>Tukar Ketua</span>
                     </div>
                 </a>
+
+                <a href="{{ route('ajk.bulk-register.index') }}"
+                    class="block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 {{ request()->routeIs('ajk.bulk-register.index') ? 'bg-gold-100 text-gold-700 font-semibold' : 'text-gray-600 hover:bg-gold-50 hover:text-gold-700' }}">
+                    <div class="flex items-center">
+                        <span
+                            class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('ajk.bulk-register.index') ? 'bg-gold-500' : 'bg-gray-300' }} mr-3"></span>
+                        <span>Bulk Daftar</span>
+                    </div>
+                </a>
             </div>
         </div>
 

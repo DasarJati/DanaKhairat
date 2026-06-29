@@ -32,6 +32,7 @@ use App\Http\Controllers\MasjidController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ToyyibpayController;
 use App\Http\Controllers\ChangeKetuaController;
+use App\Http\Controllers\BulkRegisterController;
 
 use Illuminate\Support\Facades\Artisan;
 
@@ -168,12 +169,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/senaraiahli', [AjkDashboardController::class, 'index'])->name('senariahli');
         Route::get('/list', [AjkDashboardController::class, 'index'])->name('kariah.list');
         Route::get('/senarai/pengesahan', [UserApprovalController::class, 'indexAJK'])->name('kariah.list.pengesahan');
+
+
+        Route::get('/export-excel', [UserApprovalController::class, 'exportExcel'])->name('kariah.export.excel');
+        Route::get('/export-all', [UserApprovalController::class, 'exportAll'])->name('kariah.export.all');
+        Route::post('/send-bulk-email', [UserApprovalController::class, 'sendBulkEmail'])->name('kariah.send.bulk.email');
+        Route::get('/send-individual-email/{id}', [UserApprovalController::class, 'sendIndividualEmail'])->name('kariah.send.individual.email');
+
+
         Route::get('/butiran/{id}', [AjkDashboardController::class, 'butiranAhli'])->name('butiran.ahli');
         Route::get('/khairat/{type}/{id}', [AjkDashboardController::class, 'butiranKhairat'])->name('khairat.butiran');
         Route::put('/khairat/update-status/tuntutan/{id}', [AjkDashboardController::class, 'updateStatusTuntutan'])->name('khairat.update.status.tuntutan');
         Route::get('/pic/IDlist', function () {
             return view('pic.members');
         })->name('pic.members');
+
+        Route::get('/bulk-register', [BulkRegisterController::class, 'index'])->name('ajk.bulk-register.index');
+        Route::get('/bulk-register/template', [BulkRegisterController::class, 'downloadTemplate'])->name('ajk.bulk-register.template');
+        Route::post('/bulk-register/upload', [BulkRegisterController::class, 'upload'])->name('ajk.bulk-register.upload');
+        Route::post('/bulk-register/preview', [BulkRegisterController::class, 'preview'])->name('ajk.bulk-register.preview');
+
         Route::get('/approveKariah/{id}', [UserApprovalController::class, 'indexApprove'])->name('index.approve.kariah');
         Route::post('/approveKariah/{id}', [UserApprovalController::class, 'approveKariah'])->name('approve.kariah');
         Route::post('/rejectKariah/{id}', [UserApprovalController::class, 'rejectKariah'])->name('reject.kariah');
@@ -343,11 +358,11 @@ Route::get('/show-log', function () {
 
 Route::get('/test-mailtrap', function () {
     try {
-        Mail::raw('This is a test email from Dana Khairat system. Time: ' . now(), function($message) {
+        Mail::raw('This is a test email from Dana Khairat system. Time: ' . now(), function ($message) {
             $message->to('muhdsyazwan552@gmail.com')
-                    ->subject('Test Mailtrap Connection');
+                ->subject('Test Mailtrap Connection');
         });
-        
+
         return "✅ Email sent successfully! Check your Mailtrap inbox.";
     } catch (\Exception $e) {
         return "❌ Error: " . $e->getMessage();

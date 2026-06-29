@@ -13,6 +13,8 @@ use App\Models\Wallet;
 use App\Mail\UserApprovedMail;
 use App\Models\SubscriptionsKariah;
 use App\Models\Tanggungan;
+
+use App\Services\MembershipService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -110,11 +112,11 @@ class UserApprovalController extends Controller
         return view('Ahli_Kariah.Approve_Kariah', compact('user'));
     }
 
-    public function approveKariah($id)
+    public function approveKariah($id, MembershipService $membershipService)
     {
         $userRegister = UserRegister::findOrFail($id);
 
-        
+
 
 
         if ($userRegister->approval_status === 'APPROVED') {
@@ -146,19 +148,23 @@ class UserApprovalController extends Controller
             'password' => $userRegister->password,
             'role' => '2',
             'status' => 'active',
+            'tel_number' => $userRegister->telefon_bimbit,
         ]);
 
-        
+
 
         $ahli = AhliKariah::create([
+            'family_id' => null,
             'user_id' => $user->id,
             'masjid_id' => $userRegister->masjid_id,
             'nama' => $userRegister->nama,
+            'email' => $userRegister->email,
             'ic' => $userRegister->ic_number,
             'notel' => $userRegister->telefon_bimbit,
             'jantina' => $userRegister->jantina,
             'alamat' => $userRegister->alamat,
             'status' => 'active',
+            'is_ketua' => 1
         ]);
 
         Waris::create([
@@ -189,14 +195,14 @@ class UserApprovalController extends Controller
         SubscriptionsKariah::create([
             'user_id' => $user->id,
             'masjid_id' => $userRegister->masjid_id,
-            'start_date' => now(),
-            'end_date' => now()->addYear(),
+            'start_date' => $membershipService->getStartDate(),
+            'end_date'   => $membershipService->getEndDate(),
             'status' => 'active',
             'price' => $userRegister->amount,
             'payment_id' => $payment->id,
         ]);
 
-       
+
 
         return back()->with('success', 'User berjaya diluluskan');
     }
