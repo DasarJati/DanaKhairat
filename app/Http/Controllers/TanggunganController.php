@@ -76,7 +76,7 @@ class TanggunganController extends Controller
         }
 
         return redirect()
-            ->route('ahlikeluarga')
+            ->route('ahlikeluarga.index')
             ->with('success', 'Semua tanggungan berjaya disimpan');
     }
 }

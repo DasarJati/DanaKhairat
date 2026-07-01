@@ -106,9 +106,13 @@ class UserController extends Controller
                 ->where('is_ketua', '1')
                 ->count();
 
-            $noketua  = AhliKariah::where('family_id', $familyId)
-                ->where('is_ketua', '0')
-                ->count();
+            if (empty($familyId)) {
+                $noketua = 0;
+            } else {
+                $noketua = AhliKariah::where('family_id', $familyId)
+                    ->where('is_ketua', '0')
+                    ->count();
+            }
 
             $tanggungan = Tanggungan::where('family_id', $familyId)->count();
 
@@ -211,9 +215,13 @@ class UserController extends Controller
             ->pluck('tanggungan_id')
             ->toArray();
 
-        $noketua = AhliKariah::where('family_id', $familyId)
-        ->where('is_ketua', '0')
-        ->count();
+        if (empty($familyId)) {
+            $noketua = 0;
+        } else {
+            $noketua = AhliKariah::where('family_id', $familyId)
+                ->where('is_ketua', '0')
+                ->count();
+        }
         $counttanggungan = Tanggungan::where('family_id', $familyId)->count();
 
         // Get ALL tanggungan under same family_id
@@ -246,41 +254,46 @@ class UserController extends Controller
             });
 
         // Get other ahli_kariah in same family (not current user) — old ketua etc
-        $familyAhli = AhliKariah::where('family_id', $familyId)
-            ->where('id', '!=', $ahliKariah->id)
-            ->where('status', 'active')
-            ->get()
-            ->map(function ($fa) {
-                // Calculate age
-                if (!empty($fa->ic) && strlen($fa->ic) >= 6) {
-                    $cleanedIc  = preg_replace('/[^0-9]/', '', $fa->ic);
-                    $tahun      = substr($cleanedIc, 0, 2);
-                    $bulan      = substr($cleanedIc, 2, 2);
-                    $hari       = substr($cleanedIc, 4, 2);
-                    $tahunPenuh = ($tahun <= 29) ? '20' . $tahun : '19' . $tahun;
-                    $fa->umur   = checkdate((int)$bulan, (int)$hari, (int)$tahunPenuh)
-                        ? Carbon::createFromDate($tahunPenuh, $bulan, $hari)->age
-                        : 0;
-                } else {
-                    $fa->umur = 0;
-                }
+        if (empty($familyId)) {
+            $familyAhli = collect(); // Return empty collection
+        } else {
+            $familyAhli = AhliKariah::where('family_id', $familyId)
+                ->where('is_ketua', '0')
+                ->get()
+                ->map(function ($fa) {
+                    // Calculate age
+                    if (!empty($fa->ic) && strlen($fa->ic) >= 6) {
+                        $cleanedIc  = preg_replace('/[^0-9]/', '', $fa->ic);
+                        $tahun      = substr($cleanedIc, 0, 2);
+                        $bulan      = substr($cleanedIc, 2, 2);
+                        $hari       = substr($cleanedIc, 4, 2);
+                        $tahunPenuh = ($tahun <= 29) ? '20' . $tahun : '19' . $tahun;
 
-                $fa->tuntutanInfo = TuntutanKhairat::where('ahli_id', $fa->id)
-                    ->where('type', 'AHLI')
-                    ->whereIn('status', ['PROCESSING', 'SUCCESS', 'PENDING'])
-                    ->latest()->first();
+                        $fa->umur = checkdate((int)$bulan, (int)$hari, (int)$tahunPenuh)
+                            ? Carbon::createFromDate($tahunPenuh, $bulan, $hari)->age
+                            : 0;
+                    } else {
+                        $fa->umur = 0;
+                    }
 
-                $fa->hasClaim = $fa->tuntutanInfo !== null;
+                    $fa->tuntutanInfo = TuntutanKhairat::where('ahli_id', $fa->id)
+                        ->where('type', 'AHLI')
+                        ->whereIn('status', ['PROCESSING', 'SUCCESS', 'PENDING'])
+                        ->latest()
+                        ->first();
 
-                return $fa;
-            });
+                    $fa->hasClaim = $fa->tuntutanInfo !== null;
+
+                    return $fa;
+                });
+        }
 
         $ketuaHasClaim = TuntutanKhairat::where('ahli_id', $ahliKariah->id)
             ->where('type', 'AHLI')
             ->whereIn('status', ['PROCESSING', 'SUCCESS'])
             ->first();
 
-        $jumlahAhli     = $counttanggungan+$noketua;
+        $jumlahAhli     = $counttanggungan + $noketua;
         $jumlahTuntutan = TuntutanKhairat::whereIn('tanggungan_id', $tanggunganIds)->count();
 
         // Ketua age
@@ -384,115 +397,113 @@ class UserController extends Controller
     }
 
     public function storeTransaction(Request $request, User $user)
-{
-    // Validate the incoming modal data
-    $request->validate([
-        'amount'         => 'required|numeric|min:1',
-        'payment_method' => 'required|string',
-        'paid_at'        => 'required|date',
-        'resit'          => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
-    ]);
+    {
+        // Validate the incoming modal data
+        $request->validate([
+            'amount'         => 'required|numeric|min:1',
+            'payment_method' => 'required|string',
+            'paid_at'        => 'required|date',
+            'resit'          => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
+        ]);
 
-    $resitPath = null;
-    $s3Path = null;
+        $resitPath = null;
+        $s3Path = null;
 
-    // Handle the receipt upload to S3
-    if ($request->hasFile('resit')) {
-        $file = $request->file('resit');
+        // Handle the receipt upload to S3
+        if ($request->hasFile('resit')) {
+            $file = $request->file('resit');
 
-        if ($file->isValid()) {
-            try {
-                // Generate unique filename
-                $timestamp = now()->format('Ymd_His');
-                $userId = $user->id;
-                $extension = $file->getClientOriginalExtension();
-                $filename = "resit_renew_{$userId}_{$timestamp}." . $extension;
+            if ($file->isValid()) {
+                try {
+                    // Generate unique filename
+                    $timestamp = now()->format('Ymd_His');
+                    $userId = $user->id;
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = "resit_renew_{$userId}_{$timestamp}." . $extension;
 
-                // S3 path - using 'images/ahli_renew' folder
-                $s3Path = 'images/ahli_renew/' . $filename;
+                    // S3 path - using 'images/ahli_renew' folder
+                    $s3Path = 'images/ahli_renew/' . $filename;
 
-                // Upload to S3
-                $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
+                    // Upload to S3
+                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
 
-                if (!$uploaded) {
-                    throw new \Exception('Failed to upload receipt to S3');
+                    if (!$uploaded) {
+                        throw new \Exception('Failed to upload receipt to S3');
+                    }
+
+                    // Get the S3 URL
+                    $resitPath = Storage::disk('s3')->url($s3Path);
+
+                    Log::info('Renewal receipt uploaded to S3', [
+                        'user_id' => $user->id,
+                        'path' => $s3Path,
+                        'url' => $resitPath,
+                        'filename' => $filename
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('S3 Upload Error (Renewal Receipt): ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+
+                    return back()->with('error', 'Gagal memuat naik resit pembayaran. Sila cuba lagi.');
                 }
-
-                // Get the S3 URL
-                $resitPath = Storage::disk('s3')->url($s3Path);
-
-                Log::info('Renewal receipt uploaded to S3', [
-                    'user_id' => $user->id,
-                    'path' => $s3Path,
-                    'url' => $resitPath,
-                    'filename' => $filename
-                ]);
-
-            } catch (\Exception $e) {
-                Log::error('S3 Upload Error (Renewal Receipt): ' . $e->getMessage(), [
-                    'user_id' => $user->id,
-                    'error' => $e->getMessage()
-                ]);
-
-                return back()->with('error', 'Gagal memuat naik resit pembayaran. Sila cuba lagi.');
-            }
-        } else {
-            return back()->with('error', 'Fail resit tidak sah atau rosak. Sila pilih fail yang lain.');
-        }
-    }
-
-    // Begin transaction
-    DB::beginTransaction();
-
-    try {
-        // Create the payment record
-        $payment = Payment::create([
-            'user_id'          => $user->id,
-            'masjid_id'        => $user->masjid_id ?? 1,
-            'name'             => $user->nama ?? $user->name ?? 'Ahli Khairat',
-            'amount'           => $request->amount,
-            'payment_method'   => $request->payment_method,
-            'status'           => 'PENDING',
-            'type'             => $request->type,             // Hidden input: Renew Membership
-            'transaction_type' => $request->transaction_type, // Hidden input: transaction_in
-            'paid_at'          => $request->paid_at,
-            'resit_path'       => $resitPath,
-            'remarks'          => $request->remarks,
-        ]);
-
-        DB::commit();
-
-        Log::info('Renewal transaction recorded', [
-            'payment_id' => $payment->id,
-            'user_id' => $user->id,
-            'amount' => $request->amount,
-            'resit_path' => $resitPath
-        ]);
-
-        return back()->with('success', 'Transaksi berjaya direkodkan.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        // Delete uploaded file from S3 if transaction fails
-        if ($resitPath && $s3Path) {
-            try {
-                Storage::disk('s3')->delete($s3Path);
-                Log::info('Deleted S3 file after transaction rollback', [
-                    'path' => $s3Path,
-                    'user_id' => $user->id
-                ]);
-            } catch (\Exception $deleteError) {
-                Log::error('Failed to delete S3 file: ' . $deleteError->getMessage());
+            } else {
+                return back()->with('error', 'Fail resit tidak sah atau rosak. Sila pilih fail yang lain.');
             }
         }
 
-        Log::error('Renewal transaction failed: ' . $e->getMessage(), [
-            'user_id' => $user->id,
-            'error' => $e->getMessage()
-        ]);
+        // Begin transaction
+        DB::beginTransaction();
 
-        return back()->with('error', 'Gagal merekodkan transaksi: ' . $e->getMessage());
+        try {
+            // Create the payment record
+            $payment = Payment::create([
+                'user_id'          => $user->id,
+                'masjid_id'        => $user->masjid_id ?? 1,
+                'name'             => $user->nama ?? $user->name ?? 'Ahli Khairat',
+                'amount'           => $request->amount,
+                'payment_method'   => $request->payment_method,
+                'status'           => 'PENDING',
+                'type'             => $request->type,             // Hidden input: Renew Membership
+                'transaction_type' => $request->transaction_type, // Hidden input: transaction_in
+                'paid_at'          => $request->paid_at,
+                'resit_path'       => $resitPath,
+                'remarks'          => $request->remarks,
+            ]);
+
+            DB::commit();
+
+            Log::info('Renewal transaction recorded', [
+                'payment_id' => $payment->id,
+                'user_id' => $user->id,
+                'amount' => $request->amount,
+                'resit_path' => $resitPath
+            ]);
+
+            return back()->with('success', 'Transaksi berjaya direkodkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Delete uploaded file from S3 if transaction fails
+            if ($resitPath && $s3Path) {
+                try {
+                    Storage::disk('s3')->delete($s3Path);
+                    Log::info('Deleted S3 file after transaction rollback', [
+                        'path' => $s3Path,
+                        'user_id' => $user->id
+                    ]);
+                } catch (\Exception $deleteError) {
+                    Log::error('Failed to delete S3 file: ' . $deleteError->getMessage());
+                }
+            }
+
+            Log::error('Renewal transaction failed: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Gagal merekodkan transaksi: ' . $e->getMessage());
+        }
     }
-}
 }

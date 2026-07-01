@@ -376,10 +376,10 @@
 
                     <div class="flex justify-end pt-4">
                         <button type="button"
-                            class="next-tab bg-djariah-600 hover:bg-djariah-700 text-white py-3 px-10 rounded-xl font-bold transition-all shadow-lg hover:shadow-djariah-200 flex items-center gap-3 group"
+                            class="next-tab flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 group"
                             data-next="waris">
                             Seterusnya
-                            <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                            <i class="fas fa-arrow-right transition-transform group-hover:translate-x-0.5"></i>
                         </button>
                     </div>
                 </div>
@@ -491,9 +491,10 @@
                         </button>
 
                         <button type="button"
-                            class="next-tab w-full sm:w-auto justify-center bg-djariah-600 hover:bg-djariah-700 text-white py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            data-next="login">
-                            Seterusnya <i class="fas fa-arrow-right"></i>
+                            class="next-tab flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 group"
+                            data-next="waris">
+                            Seterusnya
+                            <i class="fas fa-arrow-right transition-transform group-hover:translate-x-0.5"></i>
                         </button>
                     </div>
                 </div>
@@ -571,9 +572,10 @@
                         </button>
 
                         <button type="button"
-                            class="next-tab w-full sm:w-auto justify-center bg-djariah-600 hover:bg-djariah-700 text-white py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            data-next="payment">
-                            Seterusnya <i class="fas fa-arrow-right"></i>
+                            class="next-tab flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 group"
+                            data-next="waris">
+                            Seterusnya
+                            <i class="fas fa-arrow-right transition-transform group-hover:translate-x-0.5"></i>
                         </button>
                     </div>
                 </div>
