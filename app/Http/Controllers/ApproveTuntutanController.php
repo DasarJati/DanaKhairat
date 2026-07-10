@@ -301,10 +301,10 @@ class ApproveTuntutanController extends Controller
             'amount' => $bayaran->sumbangan_seorang,
             'payment_method' => 'MANUAL',
             'status' => 'PAID',
-            'resit_path' => null,
+            'receipt_path' => null,
             'remarks' =>  'Bayaran khairat untuk ' . $tuntutan->nama_ahli . ' (Tuntutan ID: ' . $tuntutan->id . ')',
             'type' => 'KHAIRAT',
-            'transaction_type' => 'transaction_out',
+            'flow_type' => 'transaction_out',
             'paid_at' => now()
         ]);
 
@@ -415,7 +415,7 @@ class ApproveTuntutanController extends Controller
                 'status' => 'PAID',
                 'remarks' => 'Bayaran khairat untuk ' . $request->nama,
                 'type' => 'Khairat',
-                'transaction_type' => 'transaction_out',
+                'flow_type' => 'transaction_out',
                 'paid_at' => now(),
                 'reference_type' => 'tuntutan_khairat',
                 'reference_id' => $tuntutan->id,
@@ -427,7 +427,7 @@ class ApproveTuntutanController extends Controller
                 ['balance' => 0]
             );
 
-            if ($payment->transaction_type === 'transaction_out') {
+            if ($payment->flow_type === 'transaction_out') {
                 if ($wallet->balance < $payment->amount) {
                     throw new \Exception('Baki wallet tidak mencukupi. Baki semasa: RM ' . number_format($wallet->balance, 2));
                 }
@@ -583,7 +583,7 @@ class ApproveTuntutanController extends Controller
     //                 'status' => 'PAID',
     //                 'remarks' => 'Pembayaran tuntutan khairat untuk tanggungan ' . $tanggungan->nama . ' (Tanggungan kepada: ' . $ahliKariah->nama . ')',
     //                 'type' => 'Khairat',
-    //                 'transaction_type' => 'transaction_out',
+    //                 'flow_type' => 'transaction_out',
     //                 'paid_at' => now(),
     //                 'reference_type' => 'tuntutan_khairat',
     //                 'reference_id' => $deathRecord->id,
@@ -896,7 +896,7 @@ class ApproveTuntutanController extends Controller
     //                 'status' => 'PAID',
     //                 'remarks' => 'Pembayaran tuntutan khairat untuk bukan ahli ' . $request->nama . ' (No. IC: ' . $request->ic . ')',
     //                 'type' => 'Khairat',
-    //                 'transaction_type' => 'transaction_out',
+    //                 'flow_type' => 'transaction_out',
     //                 'paid_at' => now(),
     //                 'reference_type' => 'tuntutan_khairat',
     //                 'reference_id' => $deathRecord->id,
@@ -1173,7 +1173,7 @@ class ApproveTuntutanController extends Controller
                     'status' => 'PAID',
                     'remarks' => 'Pembayaran tuntutan khairat untuk bukan ahli ' . $request->nama . ' (No. IC: ' . $request->ic . ')',
                     'type' => 'Khairat',
-                    'transaction_type' => 'transaction_out',
+                    'flow_type' => 'transaction_out',
                     'paid_at' => now(),
                     'reference_type' => 'tuntutan_khairat',
                     'reference_id' => $deathRecord->id,
@@ -1397,7 +1397,7 @@ class ApproveTuntutanController extends Controller
     //                 'status' => 'PAID',
     //                 'remarks' => 'Pembayaran tuntutan khairat untuk ahli ' . $ahliKariah->nama . ' (No. IC: ' . $ahliKariah->ic_number . ')',
     //                 'type' => 'Khairat',
-    //                 'transaction_type' => 'transaction_out',
+    //                 'flow_type' => 'transaction_out',
     //                 'paid_at' => now(),
     //                 'reference_type' => 'tuntutan_khairat',
     //                 'reference_id' => $deathRecord->id,
@@ -1669,7 +1669,7 @@ class ApproveTuntutanController extends Controller
                     'status' => 'PAID',
                     'remarks' => 'Pembayaran tuntutan khairat untuk ahli ' . $ahliKariah->nama . ' (No. IC: ' . $ahliKariah->ic_number . ')',
                     'type' => 'Khairat',
-                    'transaction_type' => 'transaction_out',
+                    'flow_type' => 'transaction_out',
                     'paid_at' => now(),
                     'reference_type' => 'tuntutan_khairat',
                     'reference_id' => $deathRecord->id,
@@ -1907,7 +1907,7 @@ class ApproveTuntutanController extends Controller
     //                 'status' => 'PAID',
     //                 'remarks' => 'Pembayaran tuntutan khairat untuk tanggungan ' . $tanggungan->nama . ' (No. IC: ' . $tanggungan->ic_number . ')',
     //                 'type' => 'Khairat',
-    //                 'transaction_type' => 'transaction_out',
+    //                 'flow_type' => 'transaction_out',
     //                 'paid_at' => now(),
     //                 'reference_type' => 'tuntutan_khairat',
     //                 'reference_id' => $deathRecord->id,
@@ -2197,7 +2197,7 @@ class ApproveTuntutanController extends Controller
                     'status' => 'PAID',
                     'remarks' => 'Pembayaran tuntutan khairat untuk tanggungan ' . $tanggungan->nama . ' (No. IC: ' . $tanggungan->ic_number . ')',
                     'type' => 'Khairat',
-                    'transaction_type' => 'transaction_out',
+                    'flow_type' => 'transaction_out',
                     'paid_at' => now(),
                     'reference_type' => 'tuntutan_khairat',
                     'reference_id' => $deathRecord->id,

@@ -8,8 +8,8 @@
             <div>
                 <h1 class="text-3xl font-black text-gray-900 tracking-tight">{{ $user->nama }}</h1>
                 <div class="flex items-center gap-3 mt-2">
-                    <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">ID
-                        #{{ $user->id }}</span>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">
+                        {{-- ID #{{ $user->id }}</span> --}}
                     <span class="text-gray-400 text-sm italic">Mendaftar pada {{ $user->created_at->format('d M Y') }}</span>
                 </div>
             </div>
@@ -107,34 +107,71 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50/50 rounded-3xl border border-dashed border-gray-200 p-8">
-                    <h2 class="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-6">Maklumat Waris</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                        <div class="md:col-span-2">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nama Penuh
-                                Waris</label>
-                            <p class="text-gray-800 font-bold text-lg">{{ $user->waris_nama ?: '-' }}</p>
+                <!-- Tanggungan Section -->
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xs font-black text-djariah-600 uppercase tracking-[0.2em]">Maklumat Tanggungan</h2>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">
+                                {{ $user->tanggungan->count() }} Tanggungan
+                            </span>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. IC
-                                Waris</label>
-                            <p class="text-gray-800 font-semibold">{{ $user->waris_ic ?: '-' }}</p>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. Telefon
-                                Waris</label>
-                            <p class="text-gray-800 font-semibold">
-                                Bimbit: {{ $user->waris_telefon_bimbit ?: '-' }} <br>
-                                Pejabat: {{ $user->waris_telefon_pejabat ?: '-' }}
-                            </p>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Alamat
-                                Waris</label>
-                            <p class="text-gray-700 text-sm font-medium">{{ $user->waris_alamat ?: '-' }}</p>
-                        </div>
+
+                        @if ($user->tanggungan && $user->tanggungan->count() > 0)
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                @foreach ($user->tanggungan as $tanggungan)
+                                    <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 hover:border-djariah-600/30 transition-all">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-djariah-600/10 flex items-center justify-center">
+                                                    <i class="fas fa-user text-djariah-600 text-sm"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-900 text-sm">{{ $tanggungan->nama }}</p>
+                                                    <p class="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                                                        {{ $tanggungan->hubungan }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            @if ($tanggungan->oku)
+                                                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">
+                                                    OKU
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-2 text-xs">
+                                                <i class="fas fa-id-card text-gray-400 w-4"></i>
+                                                <span class="text-gray-600 font-medium">{{ $tanggungan->ic_number }}</span>
+                                            </div>
+                                            @if ($tanggungan->document_path)
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <i class="fas fa-file text-gray-400 w-4"></i>
+                                                    <a href="{{ asset($tanggungan->document_path) }}" target="_blank" 
+                                                       class="text-djariah-600 hover:text-djariah-700 font-medium transition-colors">
+                                                        Lihat Dokumen <i class="fas fa-external-link-alt ml-1 text-[10px]"></i>
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <i class="fas fa-file text-gray-300 w-4"></i>
+                                                    <span class="text-gray-400 italic">Tiada dokumen</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="h-32 flex items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+                                <span class="text-gray-400 text-sm italic">Tiada maklumat tanggungan</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
+
+                
             </div>
 
             <div class="lg:col-span-4 space-y-6">
@@ -150,7 +187,7 @@
                             </span>
                         </div>
                         <div class="flex justify-between items-center pb-3 border-b border-gray-50">
-                            <span class="text-sm font-medium text-gray-500">Jumlah Bayaran</span>
+                            <span class="text-sm font-medium text-gray-500">Harga Pendaftaran dan Ahli</span>
                             <span class="px-3 py-1 rounded-lg text-md font-black bg-gray-100 text-gray-700">
                                 {{ $user->amount ? 'RM ' . number_format($user->amount, 2) : '-' }}
                             </span>
@@ -164,63 +201,12 @@
                     </div>
                 </div>
 
-                {{-- <div class="bg-gray-900 rounded-3xl p-6 text-white">
-                <label class="text-[10px] font-black text-djariah-600 uppercase tracking-widest mb-4 block">Masjid Pilihan</label>
-                @if ($user->masjid)
-                    <p class="text-xl font-bold">{{ $user->masjid->nama }}</p>
-                    <p class="text-gray-400 text-xs mt-2 italic">ID Masjid: #{{ $user->masjid_id }}</p>
-                @else
-                    <p class="text-gray-500 text-sm italic">Tiada masjid dipilih</p>
-                @endif
-            </div> --}}
+                
 
-                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Bukti Pembayaran</h3>
-                    @if ($user->receipt_path)
-                        @php
-                            $fileExtension = pathinfo($user->receipt_path, PATHINFO_EXTENSION);
-                            $isPdf = strtolower($fileExtension) === 'pdf';
-                        @endphp
-
-                        @if ($isPdf)
-                            <div class="relative group rounded-2xl overflow-hidden border border-gray-100 cursor-pointer bg-gray-50"
-                                onclick="openReceiptModal('{{ asset($user->receipt_path) }}', 'pdf')">
-                                <div class="flex flex-col items-center justify-center p-8">
-                                    <i class="fas fa-file-pdf text-red-500 text-6xl mb-3"></i>
-                                    <p class="text-gray-700 font-medium text-sm">PDF Resit Pembayaran</p>
-                                    <p class="text-gray-400 text-xs mt-2">Klik untuk lihat</p>
-                                </div>
-                                <div
-                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <span
-                                        class="text-white text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">Lihat
-                                        PDF</span>
-                                </div>
-                            </div>
-                        @else
-                            <div class="relative group rounded-2xl overflow-hidden border border-gray-100 cursor-pointer"
-                                onclick="openReceiptModal('{{ asset($user->receipt_path) }}', 'image')">
-                                <img src="{{ asset($user->receipt_path) }}" class="w-full h-[300px] object-cover">
-                                <div
-                                    class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <span
-                                        class="text-white text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">Lihat
-                                        Resit</span>
-                                </div>
-                            </div>
-                        @endif
-                    @else
-                        <div
-                            class="h-32 flex items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
-                            <span class="text-gray-400 text-xs italic">Tiada resit dimuatnaik</span>
-                        </div>
-                    @endif
-                </div>
-
-                <div class="text-center px-6">
+                {{-- <div class="text-center px-6">
                     <p class="text-[10px] font-medium text-gray-400 uppercase">Kemaskini Terakhir</p>
                     <p class="text-xs font-bold text-gray-500">{{ $user->updated_at->format('d/m/Y H:i:s') }}</p>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
@@ -272,6 +258,12 @@
 
         .text-djariah-600 {
             color: #f97316;
+        }
+        .border-djariah-600\/30 {
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+        .bg-djariah-600\/10 {
+            background-color: rgba(249, 115, 22, 0.1);
         }
     </style>
 

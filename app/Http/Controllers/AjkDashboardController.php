@@ -99,7 +99,7 @@ class AjkDashboardController extends Controller
         $imagePath = Masjid::where('id', $masjidId)->value('image_path');
 
         $payments = Payment::where('masjid_id', $user->masjid_id)
-            ->where('transaction_type', 'transaction_in')
+            ->where('flow_type', 'transaction_in')
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -583,7 +583,7 @@ class AjkDashboardController extends Controller
                         'status' => 'PAID',
                         'remarks' => 'Pembayaran tuntutan khairat untuk ' . $deceasedName . ' (No. IC: ' . $icNumber . ') - ID Tuntutan: ' . $tuntutan->id,
                         'type' => 'Khairat',
-                        'transaction_type' => 'transaction_out',
+                        'flow_type' => 'transaction_out',
                         'paid_at' => now(),
                         'reference_type' => 'tuntutan_khairat',
                         'reference_id' => $tuntutan->id,

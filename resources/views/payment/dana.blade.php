@@ -175,8 +175,8 @@
                                 
     
                                 <td class="px-8 py-5">
-                                    @if($payment->resit_path)
-                                        <a href="{{ asset($payment->resit_path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-700 text-sm font-semibold inline-flex items-center gap-1">
+                                    @if($payment->receipt_path)
+                                        <a href="{{ $payment->receipt_path }}" target="_blank" class="text-indigo-600 hover:text-indigo-700 text-sm font-semibold inline-flex items-center gap-1">
                                             <i class="fas fa-file-pdf"></i> Lihat Resit
                                         </a>
                                     @else
@@ -186,7 +186,7 @@
     
                                 <td class="px-8 py-5">
                                     <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline" onsubmit="return confirm('Terima pembayaran ini? Keahlian akan diperbaharui secara automatik.')">
+                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline" onsubmit="return confirm('Terima pembayaran ini? Keahlian akan diaktifkan secara automatik.')">
                                             @csrf
                                             <input type="hidden" name="payment_id" value="{{ $payment->id }}">
                                             <input type="hidden" name="action" value="approve">
@@ -194,16 +194,17 @@
                                                 <i class="fas fa-check"></i> Sahkan
                                             </button>
                                         </form>
-                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline" onsubmit="return confirm('Tolak pembayaran ini?')">
+                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline reject-form">
                                             @csrf
                                             <input type="hidden" name="payment_id" value="{{ $payment->id }}">
                                             <input type="hidden" name="action" value="reject">
-                                            <button type="submit" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors flex items-center gap-1">
+                                            <input type="hidden" name="reason" class="reject-reason-input">
+                                            <button type="button" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors flex items-center gap-1 btn-reject">
                                                 <i class="fas fa-times"></i> Tolak
                                             </button>
                                         </form>
                                     </div>
-                                
+                                </td>
                               </tr>
                             @empty
                                 <tr>
@@ -254,4 +255,24 @@
             letter-spacing: -0.05em;
         }
     </style>
+
+    <script>
+        document.querySelectorAll('.btn-reject').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('form');
+                const reason = prompt('Sila nyatakan sebab penolakan pembayaran ini:');
+
+                if (reason === null) {
+                    return; // user cancel
+                }
+                if (reason.trim() === '') {
+                    alert('Sebab penolakan diperlukan.');
+                    return;
+                }
+
+                form.querySelector('.reject-reason-input').value = reason.trim();
+                form.submit();
+            });
+        });
+    </script>
 @endsection

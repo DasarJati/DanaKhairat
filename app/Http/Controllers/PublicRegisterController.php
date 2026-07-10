@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\masjid as Masjid;
 use App\Models\HargaKhairat;
 use App\Models\UserRegister;
+use App\Models\TanggungansRegister;
 use App\Models\Payment;
 use App\Models\Negeri;
 use Illuminate\Support\Str;
@@ -133,15 +134,27 @@ class PublicRegisterController extends Controller
             ], 404);
         }
 
-        // ── 1. Basic field + file validation ────────────────────────────
+        // ── 1. Basic field validation ────────────────────────────────────
         $validated = $request->validate([
-            'nama'       => 'required|string',
-            'ic_number'  => 'required|string|unique:user_register,ic_number',
-            'email'      => 'required|email|unique:user_register,email',
-            'password'   => 'required|min:6',
-            'resit_file' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120',
+            'nama'          => 'required|string|max:255',
+            'ic_number'     => 'required|string|unique:user_register,ic_number',
+            'email'         => 'required|email|unique:user_register,email',
+            'password'      => 'required|min:6',
+            'jantina'       => 'nullable|string',
+            'bangsa'        => 'nullable|string',
+            'statususer'    => 'nullable|string',
+            'alamat'        => 'nullable|string',
+            'telefon_bimbit' => 'nullable|string',
+            // Tanggungan validation
+            'tanggungan'    => 'nullable|array',
+            'tanggungan.*.nama' => 'required_with:tanggungan|string|max:255',
+            'tanggungan.*.ic' => 'required_with:tanggungan|string',
+            'tanggungan.*.tarikh_lahir' => 'nullable|date',
+            'tanggungan.*.hubungan' => 'required_with:tanggungan|string|in:ISTERI,SUAMI,ANAK,IBU,AYAH,MERTUA,LAIN',
+            'tanggungan.*.jantina' => 'nullable|string|in:LELAKI,PEREMPUAN,LAIN',
+            'tanggungan.*.oku' => 'nullable|boolean',
+            'tanggungan.*.dokumen' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120',
         ], [
-            'nama.required'      => 'Nama penuh diperlukan.',
             'ic_number.required' => 'No. Kad Pengenalan diperlukan.',
             'ic_number.unique'   => 'No. Kad Pengenalan ini telah didaftarkan dalam sistem.',
             'email.required'     => 'Alamat e-mel diperlukan.',
@@ -149,130 +162,152 @@ class PublicRegisterController extends Controller
             'email.unique'       => 'Alamat e-mel ini telah digunakan. Sila gunakan e-mel lain.',
             'password.required'  => 'Kata laluan diperlukan.',
             'password.min'       => 'Kata laluan mestilah sekurang-kurangnya 6 aksara.',
-            'resit_file.mimes'   => 'Format fail resit hendaklah JPG, JPEG, PNG atau PDF sahaja.',
-            'resit_file.max'     => 'Saiz fail resit tidak boleh melebihi 5MB.',
+            'tanggungan.*.ic.required_with' => 'Sila masukkan No. Kad Pengenalan untuk setiap tanggungan.',
+            'tanggungan.*.nama.required_with' => 'Sila masukkan nama untuk setiap tanggungan.',
+            'tanggungan.*.hubungan.required_with' => 'Sila pilih hubungan untuk setiap tanggungan.',
         ]);
 
-        
-
-        // ── 2. Validate waris IC (format + age ≥ 18) ────────────────────
-        if ($request->filled('waris_ic')) {
-            $infoW = $this->extractDobAgeFromIc($request->waris_ic);
-            if (!$infoW) {
-                return response()->json([
-                    'success' => false,
-                    'errors'  => 'Nombor IC waris tidak sah. Sila masukkan nombor IC waris yang betul (12 digit).',
-                ], 422);
-            }
-            if ($infoW['umur'] < 18) {
-                return response()->json([
-                    'success' => false,
-                    'errors'  => 'Waris mestilah berumur 18 tahun ke atas. Umur waris: ' . $infoW['umur'] . ' tahun.',
-                ], 422);
-            }
+        // ── 2. Check umur pemohon (from IC) ───────────────────────────────
+        $info = $this->extractDobAgeFromIc($request->ic_number);
+        if (!$info) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Nombor IC tidak sah. Sila masukkan nombor IC yang betul (12 digit).'
+            ], 422);
         }
 
-        // ── 3. Age & Gender ──────────────────────────────────────────────
-        $jantina = strtoupper($request->jantina ?? 'LELAKI');
-        $umur    = null;
-        if (!empty($request->tarikh_lahir)) {
-            $umur = now()->diffInYears(\Carbon\Carbon::parse($request->tarikh_lahir), true);
+        $umur = $info['umur'];
+
+        if ($umur < 24) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Pendaftaran hanya dibenarkan untuk umur 24 tahun ke atas. Umur anda: ' . $umur . ' tahun.'
+            ], 422);
         }
 
-        // ── 4. Get HargaKhairat for this masjid ─────────────────────────
-        $hargaKhairat = HargaKhairat::where('masjid_id', $masjid->id)->first();
-        $yuranPendaftaran = $hargaKhairat ? $hargaKhairat->yuran_pendaftaran : 0;
-        $bayaranTahunan   = $hargaKhairat ? $hargaKhairat->bayaran_tahunan  : 0;
-        $jumlahBayaran    = $yuranPendaftaran + $bayaranTahunan;
+        // ── 3. Validate tanggungan (age validation) ───────────────────────
+        $tanggunganData = [];
+        if (!empty($request->tanggungan)) {
+            foreach ($request->tanggungan as $index => $t) {
+                if (empty($t['ic'])) {
+                    continue;
+                }
 
-        // ── 5. Handle receipt upload to AWS S3 ───────────────────────────
-        $resitPath = null;
-        $s3Path = null; // Define this for cleanup on failure
-
-        if ($request->hasFile('resit_file')) {
-            $file = $request->file('resit_file');
-
-            if ($file->isValid()) {
-                try {
-                    // Generate filename
-                    $timestamp = now()->format('Ymd_His');
-                    $icNumber  = preg_replace('/[^0-9]/', '', $request->ic_number ?? '000000');
-                    $filename  = "resit_{$icNumber}_{$timestamp}." . $file->getClientOriginalExtension();
-
-                    // S3 path - same folder structure as before
-                    $s3Path = 'register/payment_receipt/' . $filename;
-
-                    // Upload to S3
-                    $uploaded = Storage::disk('s3')->put($s3Path, file_get_contents($file), 'public');
-
-                    if (!$uploaded) {
-                        throw new \Exception('Failed to upload file to S3');
-                    }
-
-                    // Get the S3 URL
-                    $resitPath = Storage::disk('s3')->url($s3Path);
-
-                    \Log::info('Receipt uploaded to S3', [
-                        'path' => $s3Path,
-                        'url' => $resitPath,
-                        'user_ic' => $request->ic_number,
-                        'masjid_id' => $masjid->id
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('S3 Upload Error: ' . $e->getMessage());
+                $infoT = $this->extractDobAgeFromIc($t['ic']);
+                if (!$infoT) {
                     return response()->json([
                         'success' => false,
-                        'errors'  => 'Gagal memuat naik resit pembayaran ke pelayan. Sila cuba lagi.',
+                        'errors' => 'Nombor IC tanggungan "' . ($t['nama'] ?? 'Tanpa Nama') . '" tidak sah.'
                     ], 422);
                 }
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'errors'  => 'Fail resit tidak sah atau rosak. Sila pilih fail yang lain.',
-                ], 422);
+
+                $ageT = $infoT['umur'];
+                $hubungan = strtoupper(trim((string) $t['hubungan']));
+                $isOku = isset($t['oku']) && filter_var($t['oku'], FILTER_VALIDATE_BOOLEAN);
+
+                // Skip validation if OKU or age >= 60 (warga emas)
+                if ($isOku || $ageT >= 60) {
+                    continue;
+                }
+
+                // Children (ANAK) must be <= 24 years old
+                if ($hubungan === 'ANAK' && $ageT > 24) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => 'Anak bernama "' . $t['nama'] . '" tidak layak (umur ' . $ageT . ' tahun melebihi 24 tahun).'
+                    ], 422);
+                }
+
+                $tanggunganData[] = array_merge($t, [
+                    'tarikh_lahir' => $infoT['tarikh_lahir'],
+                    'umur' => $ageT,
+                    'is_oku' => $isOku,
+                ]);
             }
         }
 
-        // ── 6. Create User with receipt_path included directly ───────────
+        // ── 4. Get HargaKhairat for this masjid ───────────────────────────
+        $harga = HargaKhairat::where('masjid_id', $masjid->id)->first();
+        if (!$harga) {
+            return response()->json([
+                'success' => false,
+                'errors' => 'Harga khairat belum ditetapkan untuk masjid ini. Sila hubungi pentadbir.'
+            ], 422);
+        }
+
+        $yuranPendaftaran = $harga->yuran_pendaftaran ?? 0;
+        $bayaranTahunan   = $harga->bayaran_tahunan ?? 0;
+        $jumlahBayaran    = $yuranPendaftaran + $bayaranTahunan;
+
+        // ── 5. Create User + Tanggungan ────────────────────────────────────
         DB::beginTransaction();
 
         try {
             $user = UserRegister::create([
-                'nama' => strtoupper($request->nama ?? ''),
-                'ic_number' => $request->ic_number ?? '',
-                'tarikh_lahir' => $request->tarikh_lahir ?? null,
-                'umur' => $umur,
-                'jantina' => $jantina,
-                'bangsa' => strtoupper($request->bangsa ?? 'MELAYU'),
-                'statususer' => $request->statususer ? strtoupper($request->statususer) : null,
-                'alamat' => $request->alamat ?? '',
+                'nama'           => strtoupper($request->nama ?? ''),
+                'ic_number'      => $request->ic_number,
+                'tarikh_lahir'   => $info['tarikh_lahir'],
+                'umur'           => $umur,
+                'jantina'        => $request->jantina ? strtoupper($request->jantina) : null,
+                'bangsa'         => $request->bangsa ? strtoupper($request->bangsa) : 'MELAYU',
+                'statususer'     => $request->statususer ? strtoupper($request->statususer) : null,
+                'alamat'         => $request->alamat ?? '',
                 'telefon_bimbit' => $request->telefon_bimbit ?? '',
-                'email' => $request->email ?? '',
-                'password' => $request->password ? bcrypt($request->password) : bcrypt('password123'),
-                'masjid_id' => $masjid->id,
-                'agree_terms' => $request->has('agree_terms') ? 1 : 0,
+                'email'          => $request->email,
+                'password'       => bcrypt($request->password),
+                'masjid_id'      => $masjid->id,
+                'amount'         => $jumlahBayaran,
+                'agree_terms'    => $request->has('agree_terms') ? 1 : 0,
                 'approval_status' => 'PENDING',
-                'Paid' => 'PENDING',
-                'amount' => $jumlahBayaran,
-                'ahli_type' => $request->ahli_type,
-                'waris_nama' => $request->waris_nama ? strtoupper($request->waris_nama) : null,
-                'waris_ic' => $request->waris_ic ?? null,
-                'waris_alamat' => $request->waris_alamat ?? null,
-                'waris_telefon_pejabat' => $request->waris_telefon_pejabat ?? null,
-                'waris_telefon_bimbit' => $request->waris_telefon_bimbit ?? null,
-                'receipt_path' => $resitPath,
+                'Paid'           => 'PENDING',
+                'ahli_type'      => 'New',
+                'status'         => 'active',
             ]);
+
+            foreach ($tanggunganData as $t) {
+                // Handle document upload for tanggungan (to AWS S3)
+                $documentPath = null;
+
+                if (isset($t['dokumen']) && $t['dokumen'] instanceof \Illuminate\Http\UploadedFile) {
+                    try {
+                        $docFile = $t['dokumen'];
+                        $timestamp = now()->format('Ymd_His');
+                        $icNumber = preg_replace('/[^0-9]/', '', $t['ic']);
+                        $docFilename = "tanggungan_{$icNumber}_{$timestamp}." . $docFile->getClientOriginalExtension();
+
+                        $docS3Path = 'register/tanggungan_documents/' . $docFilename;
+
+                        $uploaded = Storage::disk('s3')->put($docS3Path, file_get_contents($docFile), 'public');
+
+                        if ($uploaded) {
+                            $documentPath = Storage::disk('s3')->url($docS3Path);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Tanggungan document upload error: ' . $e->getMessage());
+                        // Continue without document
+                    }
+                }
+
+                TanggungansRegister::create([
+                    'user_register_id' => $user->id,
+                    'nama'              => $t['nama'],
+                    'ic_number'         => $t['ic'],
+                    'tarikh_lahir'      => $t['tarikh_lahir'] ?? null,
+                    'hubungan'          => $t['hubungan'],
+                    'jantina'           => $t['jantina'] ?? null,
+                    'document_path'     => $documentPath,
+                    'oku'               => isset($t['oku']) ? filter_var($t['oku'], FILTER_VALIDATE_BOOLEAN) : false,
+                ]);
+            }
 
             DB::commit();
 
-            // Log success
-            \Log::info('User registered with S3 receipt', [
+            \Log::info('Public user registered successfully', [
                 'user_id' => $user->id,
-                'receipt_path' => $resitPath,
-                'receipt_url' => $resitPath
+                'masjid_id' => $masjid->id,
+                'tanggungan_count' => count($tanggunganData),
             ]);
 
-            // JSON Response (for AJAX / SweetAlert)
             return response()->json([
                 'success' => true,
                 'message' => 'Permohonan anda telah dihantar! Kami akan memeriksa dalam 1-3 hari.',
@@ -281,17 +316,7 @@ class PublicRegisterController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
 
-            // Delete uploaded file from S3 if transaction fails
-            if ($resitPath && $s3Path) {
-                try {
-                    Storage::disk('s3')->delete($s3Path);
-                    \Log::info('Deleted S3 file after transaction rollback', ['path' => $s3Path]);
-                } catch (\Exception $deleteError) {
-                    \Log::error('Failed to delete S3 file: ' . $deleteError->getMessage());
-                }
-            }
-
-            \Log::error('Registration failed: ' . $e->getMessage());
+            \Log::error('Public registration failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'errors' => 'Pendaftaran gagal: ' . $e->getMessage()

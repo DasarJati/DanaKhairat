@@ -16,7 +16,7 @@ class TransferBack extends Model
         'amount',
         'final_amount',
         'paid_by',
-        'resit_path',
+        'receipt_path',
 
     ];
 

@@ -19,7 +19,8 @@ class Tanggungan extends Model
         'jantina',
         'oku',
         'family_id',
-        'status'
+        'status',
+        'document_path'
     ];
 
     public function user()

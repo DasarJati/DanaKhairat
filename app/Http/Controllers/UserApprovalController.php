@@ -107,7 +107,7 @@ class UserApprovalController extends Controller
     public function indexApprove($id)
     {
         // Use the $id parameter from the route, not hardcoded value
-        $user = UserRegister::findOrFail($id);
+        $user = UserRegister::with('tanggungan')->findOrFail($id);
 
         return view('Ahli_Kariah.Approve_Kariah', compact('user'));
     }
@@ -115,9 +115,7 @@ class UserApprovalController extends Controller
     public function approveKariah($id, MembershipService $membershipService)
     {
         $userRegister = UserRegister::findOrFail($id);
-
-
-
+        $tanggunganRegisters = $userRegister->tanggungan;
 
         if ($userRegister->approval_status === 'APPROVED') {
             return back()->with('warning', 'User already approved');
@@ -151,10 +149,13 @@ class UserApprovalController extends Controller
             'tel_number' => $userRegister->telefon_bimbit,
         ]);
 
-
+        // GENERATE FAMILY ID
+        // Format: FAM-{masjid_id}-{year}{month}{day}-{random_4_digit}
+        // Example: FAM-1-20250115-7842
+        $familyId = $this->generateFamilyId($userRegister->masjid_id);
 
         $ahli = AhliKariah::create([
-            'family_id' => null,
+            'family_id' => $familyId, // Set the generated family_id
             'user_id' => $user->id,
             'masjid_id' => $userRegister->masjid_id,
             'nama' => $userRegister->nama,
@@ -164,32 +165,42 @@ class UserApprovalController extends Controller
             'jantina' => $userRegister->jantina,
             'alamat' => $userRegister->alamat,
             'status' => 'active',
-            'is_ketua' => 1
+            'is_ketua' => 1 // Ketua keluarga
         ]);
 
-        Waris::create([
-            'ahli_id' =>  $ahli->id,
-            'masjid_id' => $userRegister->masjid_id,
-            'nama' => $userRegister->waris_nama,
-            'ic_number' => $userRegister->waris_ic,
-            'alamat' => $userRegister->waris_alamat,
-            'telefon_pejabat' => $userRegister->waris_telefon_pejabat,
-            'telefon_bimbit' => $userRegister->waris_telefon_bimbit,
-        ]);
+        // Create Tanggungan records for each dependent with the SAME family_id
+        foreach ($tanggunganRegisters as $tanggunganRegister) {
+            // Check if tanggungan IC already exists in the system
+            $existingTanggungan = AhliKariah::where('ic', $tanggunganRegister->ic_number)->first();
+            if ($existingTanggungan) {
+                // Optionally skip or handle duplicate
+                continue; // Skip this tanggungan if already exists
+            }
 
+            Tanggungan::create([
+                'ahli_id' => $ahli->id,
+                'family_id' => $familyId,
+                'nama' => $tanggunganRegister->nama,
+                'ic_number' => $tanggunganRegister->ic_number,
+                'hubungan' => $tanggunganRegister->hubungan,
+                'document_path' => $tanggunganRegister->document_path,
+                'oku' => $tanggunganRegister->oku,
+                'status' => 'active'
+            ]);
+        }
 
         $payment = Payment::create([
             'user_id' => $user->id,
             'masjid_id' => $userRegister->masjid_id,
-            'name' => $userRegister->nama,
             'amount' => $userRegister->amount,
             'payment_method' => 'Manual',
-            'status' => 'PAID',
-            'resit_path' => $userRegister->receipt_path,
-            'remarks' => 'Daftar menjadi ahli melalui AJK Approval',
-            'type' => 'New Member',
-            'transaction_type' =>  'transaction_in',
-            'paid_at' => now()
+            'status' => 'pending',
+            'receipt_path' => $userRegister->receipt_path,
+            'remarks' => 'Register New Member',
+            'type' => 'new_member',
+            'flow_type' =>  'income',
+            'paid_at' => null,
+            
         ]);
 
         SubscriptionsKariah::create([
@@ -197,19 +208,42 @@ class UserApprovalController extends Controller
             'masjid_id' => $userRegister->masjid_id,
             'start_date' => $membershipService->getStartDate(),
             'end_date'   => $membershipService->getEndDate(),
-            'status' => 'active',
+            'status' => 'pending_payment',
             'price' => $userRegister->amount,
             'payment_id' => $payment->id,
+            'payment_type' => 'manual',
+            'transaction_for' => 'new',
         ]);
 
+        return back()->with('success', 'User berjaya diluluskan dengan family ID: ' . $familyId);
+    }
 
+    /**
+     * Generate a unique family ID
+     * Format: FAM-{masjid_id}-{date}-{random_4_digit}
+     */
+    private function generateFamilyId($masjidId)
+    {
+        $date = now()->format('Ymd');
+        $random = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
-        return back()->with('success', 'User berjaya diluluskan');
+        // Check for uniqueness
+        $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+
+        // Ensure uniqueness (loop until we find a unique one)
+        $attempts = 0;
+        while (AhliKariah::where('family_id', $familyId)->exists() && $attempts < 10) {
+            $random = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+            $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+            $attempts++;
+        }
+
+        return $familyId;
     }
 
     public function rejectKariah(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        $user = UserRegister::findOrFail($id);
 
         if ($user->approval_status === 'REJECTED') {
             return back()->with('warning', 'User already rejected');
@@ -371,4 +405,6 @@ class UserApprovalController extends Controller
 
         return back()->with('success', 'Permohonan telah ditolak.');
     }
+
+    
 }

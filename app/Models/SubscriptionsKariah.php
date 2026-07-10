@@ -20,6 +20,8 @@ class SubscriptionsKariah extends Model
         'status',
         'price',
         'payment_id',
+        'payment_type',
+        'transaction_for',
     ];
 
     protected $casts = [

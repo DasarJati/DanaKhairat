@@ -51,4 +51,9 @@ class UserRegister extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    function tanggungan()
+    {
+        return $this->hasMany(TanggungansRegister::class, 'user_register_id', 'id');
+        }
 }

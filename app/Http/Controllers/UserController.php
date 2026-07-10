@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 use Illuminate\Http\Request;
 
@@ -21,6 +22,7 @@ use App\Models\HargaKhairat;
 use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\Tanggungan;
+use App\Models\SubscriptionsKariah;
 
 
 
@@ -339,48 +341,209 @@ class UserController extends Controller
             throw new \Exception('Harga khairat belum ditetapkan oleh masjid ini.');
         }
 
-        // Get payments
+        // Get payments with subscription relationship
         $pembayaran = Payment::where('user_id', $user->id)
+            ->with('subscription')
             ->orderBy('paid_at', 'desc')
             ->get();
 
         // Get subscription info
         $ahliKariah = AhliKariah::where('user_id', $user->id)->first();
-        $subscriptionStatus = null; // 'active', 'expired', or 'none'
+        $subscriptionStatus = 'none';
         $subscriptionStartDate = null;
         $subscriptionEndDate = null;
         $lastExpiredDate = null;
         $daysRemaining = 0;
+        $subscription = null;
+        $isNewRegistration = false;
+        $transactionFor = null;
 
-        if ($ahliKariah) {
-            // Get the most recent subscription (active or expired)
-            $latestSubscription = $ahliKariah->subscriptions()
-                ->orderBy('end_date', 'desc')
-                ->first();
+        // Get all subscriptions for this user, ordered by created_at desc
+        $allSubscriptions = SubscriptionsKariah::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-            // Get active subscription
-            $activeSubscription = $ahliKariah->subscriptions()
-                ->where('status', 'active')
-                ->where('end_date', '>=', now())
-                ->latest()
-                ->first();
+        // Get current year
+        $currentYear = now()->year;
+        $nextYear = $currentYear + 1;
 
-            if ($activeSubscription) {
-                // ACTIVE - Show active period
-                $subscriptionStatus = 'active';
-                $subscriptionStartDate = $activeSubscription->start_date;
-                $subscriptionEndDate = $activeSubscription->end_date;
-                $daysRemaining = now()->diffInDays($activeSubscription->end_date, false);
-            } elseif ($latestSubscription && $latestSubscription->end_date < now()) {
-                // EXPIRED - Show last expired date and ask to renew
-                $subscriptionStatus = 'expired';
-                $lastExpiredDate = $latestSubscription->end_date;
-            } else {
-                // NO SUBSCRIPTION
-                $subscriptionStatus = 'none';
-            }
+        // ===== CHECK FOR ACTIVE SUBSCRIPTION =====
+        $activeSubscription = $allSubscriptions
+            ->where('status', 'active')
+            ->where('end_date', '>=', now())
+            ->first();
+
+        if ($activeSubscription) {
+            // ACTIVE - Show active period
+            $subscriptionStatus = 'active';
+            $subscription = $activeSubscription;
+            $subscriptionStartDate = $activeSubscription->start_date;
+            $subscriptionEndDate = $activeSubscription->end_date;
+            $daysRemaining = now()->diffInDays($activeSubscription->end_date, false);
+            $transactionFor = $activeSubscription->transaction_for ?? 'renew';
+            $isNewRegistration = ($transactionFor == 'new');
         } else {
-            $subscriptionStatus = 'none';
+            // ===== CHECK FOR PENDING PAYMENT (NEW) =====
+            // Only get pending_payment with 'new' transaction_for
+            $pendingPaymentSubscription = $allSubscriptions
+                ->where('status', 'pending_payment')
+                ->where('transaction_for', 'new')
+                ->first();
+
+            if ($pendingPaymentSubscription) {
+                $subscriptionStatus = 'pending_payment';
+                $subscription = $pendingPaymentSubscription;
+                $subscriptionStartDate = $pendingPaymentSubscription->created_at;
+                $transactionFor = 'new';
+                $isNewRegistration = true;
+            } else {
+                // ===== CHECK FOR WAITING VERIFICATION (NEW) =====
+                $waitingVerificationSubscription = $allSubscriptions
+                    ->where('status', 'waiting_verification')
+                    ->where('transaction_for', 'new')
+                    ->first();
+
+                if ($waitingVerificationSubscription) {
+                    $subscriptionStatus = 'waiting_verification';
+                    $subscription = $waitingVerificationSubscription;
+                    $subscriptionStartDate = $waitingVerificationSubscription->created_at;
+                    $transactionFor = 'new';
+                    $isNewRegistration = true;
+                } else {
+                    // ===== CHECK FOR PENDING PAYMENT (RENEW) =====
+                    // Get the most recent pending_payment for renewal
+                    $pendingRenewalSubscription = $allSubscriptions
+                        ->where('status', 'pending_payment')
+                        ->where('transaction_for', 'renew')
+                        ->first();
+
+                    if ($pendingRenewalSubscription) {
+                        $subscriptionStatus = 'pending_payment';
+                        $subscription = $pendingRenewalSubscription;
+                        $subscriptionStartDate = $pendingRenewalSubscription->created_at;
+                        $transactionFor = 'renew';
+                        $isNewRegistration = false;
+                    } else {
+                        // ===== CHECK FOR WAITING VERIFICATION (RENEW) =====
+                        $waitingRenewalSubscription = $allSubscriptions
+                            ->where('status', 'waiting_verification')
+                            ->where('transaction_for', 'renew')
+                            ->first();
+
+                        if ($waitingRenewalSubscription) {
+                            $subscriptionStatus = 'waiting_verification';
+                            $subscription = $waitingRenewalSubscription;
+                            $subscriptionStartDate = $waitingRenewalSubscription->created_at;
+                            $transactionFor = 'renew';
+                            $isNewRegistration = false;
+                        } else {
+                            // ===== CHECK FOR CANCELLED =====
+                            $cancelledSubscription = $allSubscriptions
+                                ->where('status', 'cancelled')
+                                ->first();
+
+                            if ($cancelledSubscription) {
+                                $subscriptionStatus = 'cancelled';
+                                $subscription = $cancelledSubscription;
+                                $transactionFor = $cancelledSubscription->transaction_for ?? 'renew';
+                                $isNewRegistration = ($transactionFor == 'new');
+                            } else {
+                                // ===== CHECK FOR EXPIRED =====
+                                // Get the most recent expired subscription
+                                $expiredSubscription = $allSubscriptions
+                                    ->where('status', 'expired')
+                                    ->where('end_date', '<', now())
+                                    ->first();
+
+                                if ($expiredSubscription) {
+                                    $subscriptionStatus = 'expired';
+                                    $subscription = $expiredSubscription;
+                                    $lastExpiredDate = $expiredSubscription->end_date;
+                                    $transactionFor = $expiredSubscription->transaction_for ?? 'renew';
+                                    $isNewRegistration = ($transactionFor == 'new');
+                                } else {
+                                    // ===== CHECK FOR ANY SUBSCRIPTION =====
+                                    $anySubscription = $allSubscriptions->first();
+
+                                    if ($anySubscription) {
+                                        $subscriptionStatus = $anySubscription->status ?? 'none';
+                                        $subscription = $anySubscription;
+                                        $transactionFor = $anySubscription->transaction_for ?? 'renew';
+                                        $isNewRegistration = ($transactionFor == 'new');
+
+                                        if ($subscriptionStatus == 'pending_payment' || $subscriptionStatus == 'waiting_verification') {
+                                            $subscriptionStartDate = $anySubscription->created_at;
+                                        }
+                                    } else {
+                                        $subscriptionStatus = 'none';
+                                        $transactionFor = null;
+                                        $isNewRegistration = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===== CHECK IF USER CAN RENEW =====
+        // User can renew if:
+        // 1. They have an active subscription that ends within 30 days
+        // 2. OR they have an expired subscription (with penalty)
+        // 3. OR they have no subscription at all (new registration)
+        $canRenew = true;
+        $renewalBlocked = false;
+        $renewalMessage = '';
+
+        // If user has an active subscription
+        if ($activeSubscription) {
+            $daysUntilExpiry = now()->diffInDays($activeSubscription->end_date, false);
+
+            // Only allow renewal if within 30 days of expiry
+            if ($daysUntilExpiry > 30) {
+                $canRenew = false;
+                $renewalBlocked = true;
+                $renewalMessage = 'Keahlian anda masih aktif untuk ' . ceil($daysUntilExpiry) . ' hari. Pembaharuan hanya dibenarkan dalam tempoh 30 hari sebelum tarikh tamat.';
+            }
+        }
+
+        // If user has an expired subscription, they can renew (with penalty)
+        if ($subscriptionStatus == 'expired') {
+            $canRenew = true;
+        }
+
+        // If user has no subscription, they can register new
+        if ($subscriptionStatus == 'none') {
+            $canRenew = true;
+        }
+
+        // If user has pending_payment or waiting_verification, they cannot make new transaction
+        if (in_array($subscriptionStatus, ['pending_payment', 'waiting_verification'])) {
+            $canRenew = false;
+            $renewalBlocked = true;
+            $renewalMessage = 'Anda mempunyai permohonan yang sedang diproses. Sila tunggu pengesahan sebelum membuat permohonan baru.';
+        }
+
+        // Calculate total amount for summary
+        $totalAmount = $harga->bayaran_tahunan;
+        $showRegistrationFee = false;
+        $showPenalty = false;
+        $registrationFee = $harga->yuran_pendaftaran ?? 0;
+        $processingFee = $harga->yuran_processing ?? 0;
+        $penaltyFee = $harga->yuran_penalti ?? 0;
+
+        // For new registration with pending/waiting status
+        if ($isNewRegistration && in_array($subscriptionStatus, ['pending_payment', 'waiting_verification'])) {
+            $showRegistrationFee = true;
+            $totalAmount += $registrationFee;
+            $totalAmount += $processingFee;
+        }
+
+        // For expired subscriptions
+        if ($subscriptionStatus == 'expired') {
+            $showPenalty = true;
+            $totalAmount += $penaltyFee;
         }
 
         // Pass variables to the view
@@ -392,9 +555,89 @@ class UserController extends Controller
             'subscriptionStartDate',
             'subscriptionEndDate',
             'lastExpiredDate',
-            'daysRemaining'
+            'daysRemaining',
+            'subscription',
+            'transactionFor',
+            'isNewRegistration',
+            'totalAmount',
+            'showRegistrationFee',
+            'showPenalty',
+            'registrationFee',
+            'processingFee',
+            'penaltyFee',
+            'canRenew',
+            'renewalBlocked',
+            'renewalMessage'
         ));
     }
+
+    public function updateTransaction(Request $request, $subscriptionId)
+    {
+        $request->validate([
+            'receipt' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $subscription = SubscriptionsKariah::with('payment')
+                ->findOrFail($subscriptionId);
+
+            if ($subscription->user_id != auth()->id()) {
+                return back()->with('error', 'Anda tidak mempunyai akses.');
+            }
+
+            if ($subscription->status !== 'pending_payment') {
+                return back()->with('error', 'Status tidak sah.');
+            }
+
+            if (!$subscription->payment) {
+                return back()->with('error', 'Rekod pembayaran tidak dijumpai.');
+            }
+
+            // Upload receipt to S3 dengan nama fail & folder custom
+            $receiptPath = null;
+
+            if ($request->hasFile('receipt')) {
+                $file = $request->file('receipt');
+                $extension = $file->getClientOriginalExtension();
+
+                $icNumber = auth()->user()->ic_number ?? auth()->id();
+                $fileName = 'resit_' . $icNumber . '_' . now()->format('Ymd_His') . '.' . $extension;
+
+                $storedPath = $file->storeAs(
+                    'register/payment_receipt',
+                    $fileName,
+                    ['disk' => 's3', 'visibility' => 'public']
+                );
+
+                // Simpan URL S3 penuh, bukan path relatif
+                $receiptPath = Storage::disk('s3')->url($storedPath);
+            }
+
+            // Update payment
+            $subscription->payment->update([
+                'status'       => 'waiting_verification',
+                'receipt_path' => $receiptPath,
+            ]);
+
+            // Update subscription
+            $subscription->update([
+                'status' => 'waiting_verification',
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Pembayaran berjaya dihantar.');
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
 
     public function storeTransaction(Request $request, User $user)
     {
@@ -403,15 +646,15 @@ class UserController extends Controller
             'amount'         => 'required|numeric|min:1',
             'payment_method' => 'required|string',
             'paid_at'        => 'required|date',
-            'resit'          => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
+            'receipt'        => 'nullable|file|mimes:pdf,png,jpg,jpeg|max:2048',
         ]);
 
-        $resitPath = null;
+        $receiptPath = null;
         $s3Path = null;
 
         // Handle the receipt upload to S3
-        if ($request->hasFile('resit')) {
-            $file = $request->file('resit');
+        if ($request->hasFile('receipt')) {
+            $file = $request->file('receipt');
 
             if ($file->isValid()) {
                 try {
@@ -466,9 +709,9 @@ class UserController extends Controller
                 'payment_method'   => $request->payment_method,
                 'status'           => 'PENDING',
                 'type'             => $request->type,             // Hidden input: Renew Membership
-                'transaction_type' => $request->transaction_type, // Hidden input: transaction_in
+                'flow_type' => $request->flow_type, // Hidden input: transaction_in
                 'paid_at'          => $request->paid_at,
-                'resit_path'       => $resitPath,
+                'receipt_path'       => $resitPath,
                 'remarks'          => $request->remarks,
             ]);
 
@@ -478,7 +721,7 @@ class UserController extends Controller
                 'payment_id' => $payment->id,
                 'user_id' => $user->id,
                 'amount' => $request->amount,
-                'resit_path' => $resitPath
+                'receipt_path' => $resitPath
             ]);
 
             return back()->with('success', 'Transaksi berjaya direkodkan.');

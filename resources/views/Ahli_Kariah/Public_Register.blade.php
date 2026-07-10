@@ -137,6 +137,69 @@
             color: #dc2626;
             margin-top: 4px;
         }
+
+        /* Tanggungan card styles */
+        .tanggungan-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tanggungan-card:hover {
+            border-color: #f97316;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.1);
+        }
+
+        .tanggungan-card .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .tanggungan-card .remove-btn:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .tanggungan-card .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tanggungan-card .card-header .badge {
+            background: #f97316;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .file-preview {
+            max-width: 120px;
+            max-height: 120px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding: 4px;
+            margin-top: 8px;
+        }
     </style>
 </head>
 
@@ -199,25 +262,23 @@
                     <div class="step-circle"><i class="fas fa-user"></i></div>
                     <span class="step-label">Pemohon</span>
                 </div>
-                <div class="step-item" data-tab="waris">
-                    <div class="step-circle"><i class="fas fa-heart"></i></div>
-                    <span class="step-label">Waris</span>
+                <div class="step-item" data-tab="tanggungan">
+                    <div class="step-circle"><i class="fas fa-users"></i></div>
+                    <span class="step-label">Tanggungan</span>
                 </div>
                 <div class="step-item" data-tab="login">
                     <div class="step-circle"><i class="fas fa-key"></i></div>
                     <span class="step-label">Maklumat Akaun</span>
                 </div>
-                <div class="step-item" data-tab="payment">
-                    <div class="step-circle"><i class="fas fa-money-bill-wave"></i></div>
-                    <span class="step-label">Pembayaran</span>
-                </div>
             </div>
+
 
             <form action="{{ route('public.daftar.store', ['slug' => $masjid->slug]) }}" method="POST"
                 enctype="multipart/form-data" class="p-6" id="publicRegisterForm">
 
                 @csrf
                 <input type="hidden" name="ahli_type" id="ahli_type">
+                <input type="hidden" name="tanggungan_data" id="tanggungan_data">
 
                 {{-- ══════════════════════════════════════════
                      TAB 1 — Butir-butir Pemohon
@@ -261,9 +322,9 @@
 
                                 <div class="space-y-2">
                                     <label class="block text-sm font-medium text-gray-700">Tarikh Lahir</label>
-                                    <input type="date" id="tarikh_lahir" name="tarikh_lahir"
-                                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50"
-                                        readonly>
+                                    <input type="text" id="tarikh_lahir" name="tarikh_lahir"
+                                        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-gray-50" readonly
+                                        placeholder="DD/MM/YYYY">
                                 </div>
 
                                 <div class="space-y-2">
@@ -371,8 +432,8 @@
 
                         <div class="flex justify-center md:justify-end pt-6">
                             <button type="button"
-                                class="next-tab w-full md:w-auto bg-djariah-600 hover:bg-djariah-700 text-white py-3 px-10 rounded-xl font-bold transition-all shadow-lg hover:shadow-djariah-200 flex justify-center items-center gap-3 group"
-                                data-next="waris">
+                                class="next-tab w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-10 rounded-xl font-bold transition-all shadow-lg hover:shadow-indigo-200 flex justify-center items-center gap-3 group"
+                                data-next="tanggungan">
                                 Seterusnya
                                 <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                             </button>
@@ -381,106 +442,60 @@
                 </div>
 
                 {{-- ══════════════════════════════════════════
-                     TAB 2 — Waris Terdekat
+                     TAB 2 — Tanggungan
                 ══════════════════════════════════════════ --}}
-                <div id="waris" class="tab-content">
-                    <section class="bg-gray-50 p-6 rounded-xl border border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <i class="fas fa-heart text-djariah-600"></i>
-                            Waris Terdekat
+                <div id="tanggungan" class="tab-content">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-users text-djariah-600"></i>
+                            Maklumat Tanggungan
+                            <span id="tanggunganCount" class="text-sm font-normal text-gray-500 ml-2">(0)</span>
                         </h3>
+                        <button type="button" id="addTanggunganBtn"
+                            class="bg-djariah-600 hover:bg-djariah-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i class="fas fa-plus-circle"></i>
+                            Tambah Tanggungan
+                        </button>
+                    </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <label class="block text-sm font-medium text-gray-700">Nama</label>
-                                <input type="text" name="waris_nama" value="{{ old('waris_nama') }}"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase"
-                                    placeholder="Nama waris" required>
-                            </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-sm text-blue-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>Nota:</strong> Tanggungan termasuk isteri/suami dan anak-anak berumur 24 tahun ke bawah.
+                        Anda boleh menambah berbilang tanggungan (tiada had).
+                    </div>
 
-                            <div class="space-y-2">
-                                <label class="block text-sm font-medium text-gray-700">No. Kad Pengenalan</label>
-                                <input type="text" id="waris_ic" name="waris_ic" value="{{ old('waris_ic') }}"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all"
-                                    placeholder="010413-03-1234" maxlength="14" required>
-                            </div>
+                    <!-- Container untuk kad tanggungan -->
+                    <div id="tanggunganContainer">
+                        <!-- Tanggungan pertama akan ditambah secara automatik -->
+                    </div>
 
-                            <div class="space-y-2 md:col-span-2">
-                                <!-- With these waris address fields and hidden input -->
-                                <input type="hidden" name="waris_alamat" id="combined_waris_address">
-                                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">No. Rumah</label>
-                                        <input type="text" id="waris_no_rumah" name="waris_no_rumah"
-                                            value="{{ old('waris_no_rumah') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
-                                            placeholder="No. Rumah">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Jalan</label>
-                                        <input type="text" id="waris_jalan" name="waris_jalan"
-                                            value="{{ old('waris_jalan') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
-                                            placeholder="Jalan">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Taman/Kampung</label>
-                                        <input type="text" id="waris_taman" name="waris_taman"
-                                            value="{{ old('waris_taman') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
-                                            placeholder="Taman/Kampung">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Poskod</label>
-                                        <input type="text" id="waris_poskod" name="waris_poskod"
-                                            value="{{ old('waris_poskod') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all text-sm"
-                                            placeholder="Poskod" maxlength="5">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Bandar</label>
-                                        <input type="text" id="waris_bandar" name="waris_bandar"
-                                            value="{{ old('waris_bandar') }}"
-                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase text-sm"
-                                            placeholder="Bandar">
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Butang tambah di bahagian bawah -->
+                    <div class="mt-4 text-center">
+                        <button type="button" id="addTanggunganBottomBtn"
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 mx-auto border-2 border-dashed border-gray-300 hover:border-djariah-400">
+                            <i class="fas fa-plus-circle text-djariah-600"></i>
+                            Tambah Tanggungan Lain
+                        </button>
+                    </div>
 
-                            <div class="space-y-2">
-                                <label class="block text-sm font-medium text-gray-700">No. Tel (Pejabat)</label>
-                                <input type="text" name="waris_telefon_pejabat"
-                                    value="{{ old('waris_telefon_pejabat') }}"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all"
-                                    placeholder="No. telefon pejabat">
-                            </div>
+                    <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
+                        <button type="button"
+                            class="prev-tab w-full sm:w-auto justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
+                            data-prev="pemohon">
+                            <i class="fas fa-arrow-left"></i> Sebelumnya
+                        </button>
 
-                            <div class="space-y-2">
-                                <label class="block text-sm font-medium text-gray-700">No. Tel (Bimbit)</label>
-                                <input type="text" name="waris_telefon_bimbit"
-                                    value="{{ old('waris_telefon_bimbit') }}"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all"
-                                    placeholder="No. telefon bimbit" required>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6">
-                            <button type="button"
-                                class="prev-tab w-full sm:w-auto justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                                data-prev="pemohon">
-                                <i class="fas fa-arrow-left"></i> Sebelumnya
-                            </button>
-                            <button type="button"
-                                class="next-tab w-full sm:w-auto justify-center bg-djariah-600 hover:bg-djariah-700 text-white py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                                data-next="login">
-                                Seterusnya <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </section>
+                        <button type="button"
+                            class="next-tab flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 group"
+                            data-next="login">
+                            Seterusnya
+                            <i class="fas fa-arrow-right transition-transform group-hover:translate-x-0.5"></i>
+                        </button>
+                    </div>
                 </div>
 
                 {{-- ══════════════════════════════════════════
-                     TAB 3 — Maklumat Akaun
+                     TAB 3 — Maklumat Akaun & Pembayaran
                 ══════════════════════════════════════════ --}}
                 <div id="login" class="tab-content">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -509,6 +524,46 @@
                             <input type="password" name="password_confirmation"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all"
                                 placeholder="Masukkan semula kata laluan" required>
+                        </div>
+                    </div>
+
+                    <!-- ========== MAKLUMAT PEMBAYARAN ========== -->
+                    <div class="border border-gray-200 rounded-xl p-4 bg-gray-50 mb-4">
+                        <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-money-bill-wave text-djariah-600"></i>
+                            Maklumat Pembayaran
+                        </h4>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Nota:</strong> Sila semak jumlah bayaran yang perlu dibayar di bawah. Pembayaran
+                            akan diproses selepas pendaftaran diluluskan.
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Yuran Pendaftaran -->
+                            <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                <p class="text-xs text-gray-500">Yuran Pendaftaran</p>
+                                <p id="yuran_pendaftaran" class="text-lg font-bold text-djariah-600">RM 0.00</p>
+                            </div>
+
+                            <!-- Bayaran Tahunan -->
+                            <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                <p class="text-xs text-gray-500">Bayaran Tahunan</p>
+                                <p id="bayaran_tahunan" class="text-lg font-bold text-djariah-600">RM 0.00</p>
+                            </div>
+
+                            <!-- Jumlah Keseluruhan -->
+                            <div class="bg-white rounded-lg p-3 border-2 border-djariah-200 md:col-span-2">
+                                <p class="text-xs text-gray-500">Jumlah Keseluruhan</p>
+                                <p id="jumlah_bayaran" class="text-2xl font-extrabold text-djariah-700">RM 0.00</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-xs text-gray-500 flex items-center gap-2">
+                            <i class="fas fa-exclamation-circle text-yellow-500"></i>
+                            <span>Jumlah bayaran ditetapkan mengikut {{ $masjid->nama }}. Arahan pembayaran akan
+                                dihantar selepas pendaftaran diluluskan.</span>
                         </div>
                     </div>
 
@@ -544,170 +599,17 @@
                     <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6">
                         <button type="button"
                             class="prev-tab w-full sm:w-auto justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            data-prev="waris">
+                            data-prev="tanggungan">
                             <i class="fas fa-arrow-left"></i> Sebelumnya
                         </button>
-                        <button type="button"
-                            class="next-tab w-full sm:w-auto justify-center bg-djariah-600 hover:bg-djariah-700 text-white py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            data-next="payment">
-                            Seterusnya <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
 
-                {{-- ══════════════════════════════════════════
-                     TAB 4 — Pembayaran
-                ══════════════════════════════════════════ --}}
-                <div id="payment" class="tab-content">
-                    <div class="bg-white border border-gray-200 rounded-2xl p-6 space-y-6">
-                        <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
-                            <i class="fas fa-file-invoice text-gray-500"></i>
-                            Ringkasan Pembayaran
-                        </h3>
-
-                        <div class="space-y-3 text-sm">
-                            <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border p-6 space-y-6">
-
-                                <!-- Radio Button Section -->
-                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                        Pernah Mendaftar Sebagai Ahli Khairat?
-                                    </label>
-                                    <div
-                                        class="bg-red-50 border-l-4 border-red-500 p-3 mb-4 text-sm text-red-500 rounded">
-                                        <i class="fas fa-info-circle mr-2"></i>
-                                        <strong>Nota:</strong> Bagi ahli yang pernah mendaftar di luar sistem (daftar
-                                        secara fizikal), sila pilih "Ya" dan muat naik resit pembayaran sedia ada (jika
-                                        ada).
-                                        Jika belum pernah mendaftar, pilih "Tidak" dan lengkapkan pendaftaran seperti
-                                        biasa.
-                                    </div>
-                                    <div class="flex gap-6">
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="payment_status" value="yes"
-                                                id="payment_yes"
-                                                class="w-4 h-4 text-djariah-600 focus:ring-djariah-500">
-                                            <span class="text-gray-700 font-medium">Ya (Pernah Daftar Secara
-                                                Fizikal)</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="payment_status" value="no"
-                                                id="payment_no"
-                                                class="w-4 h-4 text-djariah-600 focus:ring-djariah-500">
-                                            <span class="text-gray-700 font-medium">Tidak (Belum Pernah Daftar)</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <!-- Bank & Payment Details Section - Only shown for "Tidak" option -->
-                                <div id="bankDetailsSection" class="space-y-6">
-                                    <div
-                                        class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                                        <strong>Perhatian:</strong>
-                                        <ul class="list-disc list-inside mt-2 space-y-1">
-                                            <li>Sila buat pemindahan wang ke akaun di bawah terlebih dahulu.</li>
-                                            <li>Selepas pembayaran berjaya, muat naik resit pembayaran sebelum menekan
-                                                butang <b>Hantar</b>.</li>
-                                            <li>Permohonan hanya akan diproses selepas resit diterima.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div class="flex gap-4 items-start">
-                                            <img id="qrImage" src="{{ asset('images/default-qr.png') }}"
-                                                alt="QR Bayaran"
-                                                class="w-40 h-40 object-contain rounded-xl border cursor-pointer hover:scale-105 transition"
-                                                onclick="openZoom(this)">
-                                            <div class="space-y-3">
-                                                <div>
-                                                    <p class="text-xs text-gray-500">Nombor Akaun</p>
-                                                    <p id="bank_no_akaun"
-                                                        class="font-semibold text-gray-800 tracking-wide">-</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500">Nama Akaun</p>
-                                                    <p id="bank_nama_akaun" class="font-semibold text-gray-800">-</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-xs text-gray-500">Bank</p>
-                                                    <p id="bank_nama_bank" class="font-semibold text-gray-800">-</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-500">Yuran Pendaftaran</span>
-                                                <span id="yuran_pendaftaran" class="font-medium">RM 0.00</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-gray-500">Bayaran Tahunan</span>
-                                                <span id="bayaran_tahunan" class="font-medium">RM 0.00</span>
-                                            </div>
-                                            <div class="border-t pt-3 flex justify-between text-base font-semibold">
-                                                <span>Jumlah Pembayaran</span>
-                                                <span id="jumlah_bayaran" class="text-djariah-600">RM 0.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- ── Single File Upload (shown for both Yes/No) ── --}}
-                                <div id="fileUploadSection" class="space-y-6">
-                                    <!-- Dynamic message based on selection -->
-                                    <div id="fileUploadMessage"
-                                        class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                                        <i class="fas fa-info-circle mr-2"></i>
-                                        <span id="fileUploadText">Sila muat naik resit pembayaran untuk pendaftaran
-                                            baharu.</span>
-                                    </div>
-
-                                    <div class="space-y-3">
-                                        <label class="block text-sm font-medium text-gray-700">
-                                            Muat Naik Resit / Bukti Pembayaran <span id="fileRequiredStar"
-                                                class="text-red-500">*</span>
-                                        </label>
-                                        <div
-                                            class="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800 flex items-center gap-2">
-                                            <i class="fas fa-exclamation-circle"></i>
-                                            Had saiz fail: <strong>5MB</strong>. Format dibenarkan: JPG, PNG, PDF.
-                                        </div>
-                                        <input type="file" id="resit_file_single" name="resit_file"
-                                            accept="image/jpeg,image/jpg,image/png,.pdf"
-                                            onchange="previewReceiptSingle(event)"
-                                            class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-djariah-600 file:text-white hover:file:bg-djariah-700">
-                                        <div id="resit_file_single_info"
-                                            class="hidden text-xs mt-1 flex items-center gap-2"></div>
-                                        <div id="receiptPreviewSingle" class="hidden mt-4">
-                                            <p class="text-xs text-gray-500 mb-2">Preview Resit:</p>
-                                            <img id="receiptImageSingle"
-                                                class="w-48 rounded-xl border shadow-sm cursor-pointer hover:scale-105 transition"
-                                                onclick="openZoom(this)">
-                                        </div>
-                                        <p id="fileUploadHint" class="text-xs text-gray-400">* Sila muat naik resit
-                                            pembayaran untuk pengesahan.</p>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <hr class="border-gray-100">
-                            <p class="text-xs text-gray-400">Jumlah bayaran akan dikira secara automatik.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row justify-between gap-3 mt-4">
-                        <button type="button"
-                            class="prev-tab w-full sm:w-auto justify-center bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 px-6 rounded-lg font-medium transition-colors flex items-center gap-2"
-                            data-prev="login">
-                            <i class="fas fa-arrow-left"></i> Sebelumnya
-                        </button>
                         <button type="submit" id="submitBtn"
-                            class="w-full sm:w-auto justify-center bg-djariah-600 hover:bg-djariah-700 text-white py-2.5 px-6 rounded-lg font-medium inline-flex items-center gap-2">
-                            Buat Pembayaran <i class="fas fa-arrow-right"></i>
+                            class="w-full sm:w-auto justify-center bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-6 rounded-lg font-medium inline-flex items-center gap-2">
+                            <i class="fas fa-paper-plane"></i> Hantar Permohonan
                         </button>
                     </div>
                 </div>
+
             </form>
 
             @if ($errors->any())
@@ -747,8 +649,8 @@
          JAVASCRIPT
     ════════════════════════════════════════════════════════════ -->
     <script>
-        // ── Stepper ──────────────────────────────────────────────────────
-        const TAB_ORDER = ['pemohon', 'waris', 'login', 'payment'];
+        // ── Stepper order ────────────────────────────────────────────────
+        const TAB_ORDER = ['pemohon', 'tanggungan', 'login'];
 
         function switchTab(tabId) {
             const idx = TAB_ORDER.indexOf(tabId);
@@ -804,7 +706,7 @@
                 }
             });
 
-            // IC format — pemohon
+            // IC format + age — pemohon
             if (tabId === 'pemohon') {
                 const ic = document.getElementById('ic_number');
                 if (ic && ic.value && !/^\d{6}-\d{2}-\d{4}$/.test(ic.value)) {
@@ -820,14 +722,40 @@
                 }
             }
 
-            // IC format — waris
-            if (tabId === 'waris') {
-                const wic = document.getElementById('waris_ic');
-                if (wic && wic.value && !/^\d{6}-\d{2}-\d{4}$/.test(wic.value)) {
-                    showError(wic, 'Format IC tidak sah. Contoh: 010413-03-1234');
-                    errorMessages.push('Format IC Waris tidak sah.');
+            // Tanggungan validation
+            if (tabId === 'tanggungan') {
+                const cards = document.querySelectorAll('.tanggungan-card');
+                if (cards.length === 0) {
+                    errorMessages.push('Sila tambah sekurang-kurangnya satu tanggungan.');
                     valid = false;
                 }
+                cards.forEach((card, idx) => {
+                    const nama = card.querySelector(`input[name="tanggungan[${idx}][nama]"]`);
+                    const ic = card.querySelector(`input[name="tanggungan[${idx}][ic]"]`);
+                    const tarikh = card.querySelector(`input[name="tanggungan[${idx}][tarikh_lahir]"]`);
+                    const hubungan = card.querySelector(`select[name="tanggungan[${idx}][hubungan]"]`);
+
+                    if (nama && !nama.value.trim()) {
+                        showError(nama, 'Nama tanggungan wajib diisi.');
+                        errorMessages.push(`Tanggungan #${idx + 1}: Nama wajib diisi.`);
+                        valid = false;
+                    }
+                    if (ic && ic.value && !/^\d{6}-\d{2}-\d{4}$/.test(ic.value)) {
+                        showError(ic, 'Format IC tidak sah. Contoh: 010413-03-1234');
+                        errorMessages.push(`Tanggungan #${idx + 1}: Format IC tidak sah.`);
+                        valid = false;
+                    }
+                    if (tarikh && !tarikh.value) {
+                        showError(tarikh, 'Tarikh lahir wajib diisi.');
+                        errorMessages.push(`Tanggungan #${idx + 1}: Tarikh lahir wajib diisi.`);
+                        valid = false;
+                    }
+                    if (hubungan && !hubungan.value) {
+                        showError(hubungan, 'Sila pilih hubungan.');
+                        errorMessages.push(`Tanggungan #${idx + 1}: Hubungan wajib dipilih.`);
+                        valid = false;
+                    }
+                });
             }
 
             // Password match — login
@@ -890,7 +818,6 @@
 
             setIcStatus('loading');
 
-            // Uses the same endpoint as RegisterController::checkIc
             fetch('/user/check-ic?ic=' + encodeURIComponent(icValue), {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
@@ -910,7 +837,6 @@
                     }
                 })
                 .catch(() => {
-                    // Network error — do not block user, but log it
                     setIcStatus('hide');
                     icIsValid = true;
                 });
@@ -924,7 +850,14 @@
             return d;
         }
 
-        // ── IC auto-fill DOB + Umur ──────────────────────────────────────
+        // ── File size helper (used by tanggungan file preview) ───────────
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // ── IC auto-fill DOB + Umur (pemohon) ─────────────────────────────
         (function() {
             const icInput = document.getElementById('ic_number');
             const tarikhLahirInput = document.getElementById('tarikh_lahir');
@@ -939,20 +872,15 @@
                 let mm = parseInt(d.slice(2, 4), 10);
                 let dd = parseInt(d.slice(4, 6), 10);
 
-                // Validate month and day
                 if (mm < 1 || mm > 12) return null;
                 if (dd < 1 || dd > 31) return null;
 
-                // Determine century (Malaysian IC: 00-29 = 2000s, 30-99 = 1900s)
                 let fy = yy <= 29 ? 2000 + yy : 1900 + yy;
-
                 let dt = new Date(fy, mm - 1, dd);
 
-                // Validate the date is real
                 if (dt.getFullYear() !== fy || dt.getMonth() !== mm - 1 || dt.getDate() !== dd) {
                     return null;
                 }
-
                 return dt;
             }
 
@@ -960,8 +888,6 @@
                 const today = new Date();
                 let age = today.getFullYear() - birthDate.getFullYear();
                 const monthDiff = today.getMonth() - birthDate.getMonth();
-
-                // If birthday hasn't occurred yet this year, subtract 1
                 if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                     age--;
                 }
@@ -971,10 +897,11 @@
             function updateDobAndAge() {
                 const bd = parseMalaysiaIC(icInput.value);
                 if (bd) {
-                    const y = bd.getFullYear(),
-                        m = String(bd.getMonth() + 1).padStart(2, '0'),
-                        d = String(bd.getDate()).padStart(2, '0');
-                    tarikhLahirInput.value = `${y}-${m}-${d}`;
+                    // Format as DD/MM/YYYY
+                    const d = String(bd.getDate()).padStart(2, '0');
+                    const m = String(bd.getMonth() + 1).padStart(2, '0');
+                    const y = bd.getFullYear();
+                    tarikhLahirInput.value = `${d}/${m}/${y}`;
                     umurInput.value = calcAge(bd);
                 } else if (icInput.value.replace(/\D/g, '').length >= 6) {
                     tarikhLahirInput.value = '';
@@ -994,7 +921,6 @@
 
                 updateDobAndAge();
 
-                // Debounced server IC check
                 clearTimeout(icCheckTimer);
                 icIsValid = false;
                 const cleaned = this.value.replace(/\D/g, '');
@@ -1005,7 +931,6 @@
                 }
             });
 
-            // Pre-fill from Blade prefill
             if (icInput.value) {
                 icInput.value = formatIC(icInput.value);
                 updateDobAndAge();
@@ -1014,49 +939,12 @@
             }
         })();
 
-        // ── Waris IC mask + age gate (≥18) ──────────────────────────────
-        (function() {
-            const warisIcInput = document.getElementById('waris_ic');
-            if (!warisIcInput) return;
-
-            warisIcInput.addEventListener('input', function() {
-                let pos = this.selectionStart;
-                let before = this.value;
-                this.value = formatIC(this.value);
-                let delta = this.value.length - before.length;
-                if (delta > 0) pos += delta;
-                try {
-                    this.setSelectionRange(pos, pos);
-                } catch (e) {}
-
-                const d = this.value.replace(/\D/g, '');
-                if (d.length === 12) {
-                    let yy = parseInt(d.slice(0, 2), 10);
-                    let mm = parseInt(d.slice(2, 4), 10);
-                    let dd = parseInt(d.slice(4, 6), 10);
-                    let fy = yy <= 29 ? 2000 + yy : 1900 + yy;
-                    let bd = new Date(fy, mm - 1, dd);
-                    let t = new Date();
-                    let age = t.getFullYear() - bd.getFullYear();
-                    if (t.getMonth() < bd.getMonth() ||
-                        (t.getMonth() === bd.getMonth() && t.getDate() < bd.getDate())) age--;
-                    if (age < 18) {
-                        showError(this, '❗ Waris mesti berumur 18 tahun ke atas.');
-                        this.value = '';
-                    }
-                }
-            });
-
-            if (warisIcInput.value) warisIcInput.value = formatIC(warisIcInput.value);
-        })();
-
         // ── Next / Prev buttons ──────────────────────────────────────────
         document.querySelectorAll('.next-tab').forEach(button => {
             button.addEventListener('click', async () => {
                 const currentTab = document.querySelector('.tab-content.active');
                 if (!currentTab) return;
 
-                // ★ IC duplicate check blocks leaving pemohon tab (same as register_blade)
                 if (currentTab.id === 'pemohon') {
                     const icInput = document.getElementById('ic_number');
                     const cleaned = (icInput?.value || '').replace(/\D/g, '');
@@ -1065,6 +953,19 @@
                             icon: 'error',
                             title: 'No. IC Tidak Sah',
                             text: 'No. Kad Pengenalan ini telah wujud dalam sistem atau belum disahkan. Sila semak semula.',
+                            confirmButtonColor: '#ea580c',
+                        });
+                        return;
+                    }
+                }
+
+                if (currentTab.id === 'tanggungan') {
+                    const cards = document.querySelectorAll('.tanggungan-card');
+                    if (cards.length === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Tiada Tanggungan',
+                            text: 'Sila tambah sekurang-kurangnya satu tanggungan.',
                             confirmButtonColor: '#ea580c',
                         });
                         return;
@@ -1080,428 +981,7 @@
             button.addEventListener('click', () => switchTab(button.getAttribute('data-prev')));
         });
 
-        // ── Load Harga on page load ──────────────────────────────────────
-        document.addEventListener('DOMContentLoaded', function() {
-            const masjidId = '{{ $masjid->id }}';
-            if (!masjidId) return;
-            fetch('/get-hargakhairat/' + masjidId)
-                .then(r => {
-                    if (!r.ok) throw new Error();
-                    return r.json();
-                })
-                .then(h => {
-                    const byr = parseFloat(h.bayaran_tahunan ?? 0);
-                    const yur = parseFloat(h.yuran_pendaftaran ?? 0);
-                    document.getElementById('bayaran_tahunan') &&
-                        (document.getElementById('bayaran_tahunan').innerText = 'RM ' + byr.toFixed(2));
-                    document.getElementById('yuran_pendaftaran') &&
-                        (document.getElementById('yuran_pendaftaran').innerText = 'RM ' + yur.toFixed(2));
-                    document.getElementById('jumlah_bayaran') &&
-                        (document.getElementById('jumlah_bayaran').innerText = 'RM ' + (byr + yur).toFixed(2));
-                })
-                .catch(() => {});
-
-            // Load bank info for the fixed masjid
-            loadBankInfo(masjidId);
-            initAddressFeatures();
-            combineAddressForSubmit();
-            combineWarisAddressForSubmit();
-        });
-
-        const publicRegisterForm = document.getElementById('publicRegisterForm');
-        if (publicRegisterForm) {
-            publicRegisterForm.addEventListener('submit', function(e) {
-                combineAddressForSubmit();
-                combineWarisAddressForSubmit();
-            });
-        }
-
-        function loadBankInfo(masjidId) {
-            fetch('/get-bank/' + masjidId)
-                .then(res => res.json())
-                .then(data => {
-                    if (!data) return;
-                    document.getElementById('bank_no_akaun').textContent = data.no_akaun ?? '-';
-                    document.getElementById('bank_nama_akaun').textContent = data.nama_akaun ?? '-';
-                    document.getElementById('bank_nama_bank').textContent = data.nama_bank ?? '-';
-                    if (data.qr_path) {
-                        document.getElementById('qrImage').src = '/' + data.qr_path;
-                    }
-                })
-                .catch(err => console.log(err));
-        }
-
-        // ── File size helpers (same as register_blade) ───────────────────
-        const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' B';
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-        }
-
-        // ── Image Compression Function (Fixes iPhone uploads) ──
-        function compressImage(file, callback) {
-            // If not an image, return original file
-            if (!file.type.startsWith('image/')) {
-                callback(file);
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (e) => {
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    // Max dimensions - reduce large images from iPhone
-                    const MAX_WIDTH = 1200;
-                    const MAX_HEIGHT = 1200;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Convert to JPEG with 70% quality
-                    canvas.toBlob((blob) => {
-                        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), {
-                            type: 'image/jpeg',
-                            lastModified: Date.now()
-                        });
-                        callback(compressedFile);
-                    }, 'image/jpeg', 0.7);
-                };
-            };
-            reader.onerror = () => {
-                // If compression fails, use original file
-                callback(file);
-            };
-        }
-
-        /**
-         * Show size badge below the input. Returns false when over limit.
-         */
-        function showFileInfo(infoElId, file) {
-            const el = document.getElementById(infoElId);
-            if (!el || !file) return true;
-            const overLimit = file.size > MAX_FILE_BYTES;
-            el.classList.remove('hidden');
-            if (overLimit) {
-                el.innerHTML =
-                    `<i class="fas fa-times-circle text-red-500"></i>
-                    <span class="text-red-600">Saiz fail: <strong>${formatFileSize(file.size)}</strong> — melebihi had 5MB. Sila pilih fail yang lebih kecil.</span>`;
-            } else {
-                el.innerHTML = `<i class="fas fa-check-circle text-green-500"></i>
-                    <span class="text-green-600">Saiz fail: <strong>${formatFileSize(file.size)}</strong> — OK</span>`;
-            }
-            return !overLimit;
-        }
-
-        // ── Preview Receipt with Compression ───────────────────
-        function previewReceiptSingle(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            // Get file extension
-            const fileName = file.name;
-            const fileExt = fileName.split('.').pop().toLowerCase();
-
-            console.log('Original file:', {
-                name: fileName,
-                type: file.type,
-                size: formatFileSize(file.size),
-                extension: fileExt
-            });
-
-            // Allow more formats including HEIC from iPhone
-            const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'heic', 'heif'];
-
-            // Check by extension
-            if (!allowedExtensions.includes(fileExt)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Format Fail Tidak Dibenarkan',
-                    html: `Format <strong>${fileExt.toUpperCase()}</strong> tidak dibenarkan.<br>Sila gunakan format JPG, PNG, PDF atau HEIC.`,
-                    confirmButtonColor: '#ea580c',
-                });
-                event.target.value = '';
-                document.getElementById('receiptPreviewSingle').classList.add('hidden');
-                document.getElementById('resit_file_single_info').classList.add('hidden');
-                return;
-            }
-
-            // Compress image first (for photos)
-            compressImage(file, (compressedFile) => {
-                console.log('Compressed file:', {
-                    name: compressedFile.name,
-                    size: formatFileSize(compressedFile.size),
-                    compression: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '% reduction'
-                });
-
-                // Validate file size after compression (5MB max)
-                if (compressedFile.size > MAX_FILE_BYTES) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Fail Terlalu Besar',
-                        html: `Saiz fail selepas kompresi: <strong>${formatFileSize(compressedFile.size)}</strong><br>Had maksimum: <strong>5MB</strong><br>Sila pilih fail yang lebih kecil.`,
-                        confirmButtonColor: '#ea580c',
-                    });
-                    event.target.value = '';
-                    document.getElementById('receiptPreviewSingle').classList.add('hidden');
-                    return;
-                }
-
-                // Replace original file with compressed version (for images)
-                if (compressedFile.size !== file.size) {
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(compressedFile);
-                    event.target.files = dataTransfer.files;
-                }
-
-                // Show success message with compression info
-                const infoEl = document.getElementById('resit_file_single_info');
-                if (infoEl) {
-                    infoEl.classList.remove('hidden');
-                    infoEl.innerHTML =
-                        `<i class="fas fa-check-circle text-green-500"></i>
-                <span class="text-green-600">Fail: <strong>${fileName}</strong> (${formatFileSize(compressedFile.size)}) — OK</span>`;
-
-                    if (compressedFile.size !== file.size && file.type.startsWith('image/')) {
-                        const reduction = ((1 - compressedFile.size / file.size) * 100).toFixed(0);
-                        infoEl.innerHTML +=
-                            `<br><i class="fas fa-compress-alt text-blue-500"></i>
-                    <span class="text-gray-600">Gambar telah dimampatkan ${reduction}% untuk muat naik lebih pantas.</span>`;
-                    } else if (['heic', 'heif'].includes(fileExt)) {
-                        infoEl.innerHTML += `<br><i class="fas fa-info-circle text-blue-500"></i>
-                    <span class="text-gray-600">Fail HEIC dari iPhone telah ditukar ke JPEG.</span>`;
-                    }
-                }
-
-                // Handle preview
-                const preview = document.getElementById('receiptPreviewSingle');
-                const img = document.getElementById('receiptImageSingle');
-
-                if (compressedFile.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        img.src = e.target.result;
-                        preview.classList.remove('hidden');
-                    };
-                    reader.onerror = function() {
-                        preview.classList.add('hidden');
-                    };
-                    reader.readAsDataURL(compressedFile);
-                } else if (fileExt === 'pdf') {
-                    preview.classList.add('hidden');
-                    if (infoEl) {
-                        infoEl.innerHTML += `<br><i class="fas fa-file-pdf text-red-500"></i>
-                    <span class="text-gray-600">Fail PDF diterima. Tiada preview.</span>`;
-                    }
-                } else {
-                    preview.classList.add('hidden');
-                }
-            });
-        }
-
-        // ── Zoom modal ───────────────────────────────────────────────────
-        function openZoom(img) {
-            document.getElementById('zoomImage').src = img.src;
-            document.getElementById('zoomModal').classList.remove('hidden');
-        }
-
-        function closeZoom() {
-            document.getElementById('zoomModal').classList.add('hidden');
-        }
-        document.getElementById('zoomModal').addEventListener('click', e => {
-            if (e.target.id === 'zoomModal') closeZoom();
-        });
-
-        // ── Payment radio toggle ─────────────────────────────────────────
-        const radioYes = document.querySelector('input[name="payment_status"][value="yes"]');
-        const radioNo = document.querySelector('input[name="payment_status"][value="no"]');
-        const yesContent = document.getElementById('yesContent');
-        const noContent = document.getElementById('noContent');
-        const ahliTypeInput = document.getElementById('ahli_type');
-        const fileMain = document.getElementById('resit_file_main');
-        const fileYes = document.getElementById('resit_file_yes');
-
-        function togglePaymentContent() {
-            const isYes = radioYes && radioYes.checked;
-            const bankDetailsSection = document.getElementById('bankDetailsSection');
-            const fileUploadText = document.getElementById('fileUploadText');
-            const fileRequiredStar = document.getElementById('fileRequiredStar');
-            const fileUploadHint = document.getElementById('fileUploadHint');
-
-            if (isYes) {
-                // Hide bank details for "Yes" option
-                if (bankDetailsSection) bankDetailsSection.style.display = 'none';
-
-                // Update message - file is OPTIONAL
-                fileUploadText.innerHTML =
-                    'Jika anda mempunyai resit atau bukti pembayaran sedia ada, sila muat naik. Permohonan anda akan diproses selepas resit/bukti diterima dan disahkan (jika ada).';
-
-                // Remove required star and update hint
-                if (fileRequiredStar) fileRequiredStar.style.display = 'none';
-                if (fileUploadHint) fileUploadHint.innerHTML =
-                    '⚠️ Nota: Muat naik resit adalah TIDAK WAJIB jika anda pernah mendaftar secara fizikal, tetapi disyorkan untuk mempercepatkan proses pengesahan.';
-            } else {
-                // Show bank details for "Tidak" option
-                if (bankDetailsSection) bankDetailsSection.style.display = 'block';
-
-                // Update message - file is REQUIRED
-                fileUploadText.innerHTML =
-                    'Sila buat pemindahan wang ke akaun di bawah terlebih dahulu. Selepas pembayaran berjaya, muat naik resit pembayaran sebelum menekan butang Hantar. Permohonan hanya akan diproses selepas resit diterima.';
-
-                // Show required star and update hint
-                if (fileRequiredStar) fileRequiredStar.style.display = 'inline';
-                if (fileUploadHint) fileUploadHint.innerHTML =
-                    '* Sila muat naik resit pembayaran untuk pengesahan (WAJIB).';
-            }
-
-            if (ahliTypeInput) ahliTypeInput.value = isYes ? 'Existing' : 'New';
-        }
-
-        radioYes?.addEventListener('change', togglePaymentContent);
-        radioNo?.addEventListener('change', togglePaymentContent);
-        // Default: "Tidak" selected
-        if (radioNo) radioNo.checked = true;
-        togglePaymentContent();
-
-        // ── AJAX Submit with SweetAlert ──────────────────────────────────
-        document.getElementById('publicRegisterForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Validate payment tab before submit
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab && activeTab.id === 'payment') {
-                const radioYes = document.querySelector('input[name="payment_status"][value="yes"]');
-                const radioNo = document.querySelector('input[name="payment_status"][value="no"]');
-
-                if (!radioYes?.checked && !radioNo?.checked) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Pilihan Pembayaran',
-                        text: 'Sila pilih sama ada anda pernah mendaftar secara fizikal atau belum.',
-                        confirmButtonColor: '#ea580c'
-                    });
-                    return;
-                }
-
-                // File validation: REQUIRED for "Tidak", OPTIONAL for "Ya"
-                const singleFile = document.getElementById('resit_file_single');
-                const isYesSelected = radioYes?.checked;
-
-                if (!isYesSelected) {
-                    // "Tidak" option - file is REQUIRED
-                    if (!singleFile || !singleFile.files || singleFile.files.length === 0) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Resit Pembayaran Diperlukan',
-                            text: 'Sila muat naik resit pembayaran untuk pendaftaran baharu. Ini adalah WAJIB.',
-                            confirmButtonColor: '#ea580c'
-                        });
-                        return;
-                    }
-                }
-                // "Ya" option - no file validation, file is optional
-            }
-
-            // Show loading
-            Swal.fire({
-                title: 'Memproses Pendaftaran...',
-                text: 'Sila tunggu sebentar.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            const formData = new FormData(this);
-
-            fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Permohonan Dihantar!',
-                            html: `<p>${data.message}</p>
-                               <p class="text-sm mt-3 text-blue-600">
-                                   <i class="fas fa-envelope"></i> Sila semak e-mel anda
-                               </p>`,
-                            confirmButtonColor: '#ea580c',
-                            confirmButtonText: 'OK',
-                            timer: 4000,
-                            timerProgressBar: true
-                        }).then(() => {
-                            window.location.href = data.redirect_url;
-                        });
-                    } else {
-                        // Build error HTML — support string or object errors
-                        let errorHtml = '';
-                        if (typeof data.errors === 'string') {
-                            errorHtml = `<p class="text-sm">${data.errors}</p>`;
-                        } else if (typeof data.errors === 'object') {
-                            const msgs = Object.values(data.errors).flat();
-                            errorHtml = '<ul class="text-left text-sm list-disc pl-4">' +
-                                msgs.map(m => `<li>${m}</li>`).join('') +
-                                '</ul>';
-                        } else {
-                            errorHtml = '<p class="text-sm">Sila semak maklumat yang diisi.</p>';
-                        }
-
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Pendaftaran Gagal',
-                            html: `<div class="text-left">
-                                   <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
-                                   ${errorHtml}
-                               </div>`,
-                            confirmButtonColor: '#ea580c'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Ralat Sistem',
-                        text: 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.',
-                        confirmButtonColor: '#ea580c'
-                    });
-                });
-        });
-
-        // Expose globals needed by inline onchange/onclick attributes
-        window.previewReceiptSingle = previewReceiptSingle;
-        window.openZoom = openZoom;
-        window.closeZoom = closeZoom;
-    </script>
-    <script>
+        // ── Combine Address ──────────────────────────────────────────────
         function combineAddressForSubmit() {
             const noRumah = document.getElementById('no_rumah')?.value.trim() || '';
             const jalan = document.getElementById('jalan')?.value.trim() || '';
@@ -1522,30 +1002,8 @@
             return combinedAddress;
         }
 
-        function combineWarisAddressForSubmit() {
-            const noRumah = document.getElementById('waris_no_rumah')?.value.trim() || '';
-            const jalan = document.getElementById('waris_jalan')?.value.trim() || '';
-            const taman = document.getElementById('waris_taman')?.value.trim() || '';
-            const poskod = document.getElementById('waris_poskod')?.value.trim() || '';
-            const bandar = document.getElementById('waris_bandar')?.value.trim() || '';
-
-            const parts = [];
-            if (noRumah) parts.push(noRumah);
-            if (jalan) parts.push(jalan);
-            if (taman) parts.push(taman);
-            if (poskod) parts.push(poskod);
-            if (bandar) parts.push(bandar);
-
-            const combinedAddress = parts.join(' / ');
-            const hiddenInput = document.getElementById('combined_waris_address');
-            if (hiddenInput) hiddenInput.value = combinedAddress;
-            return combinedAddress;
-        }
-
         function setupAddressUppercase() {
-            const addressFields = ['no_rumah', 'jalan', 'taman', 'bandar_field', 'waris_no_rumah', 'waris_jalan',
-                'waris_taman', 'waris_bandar'
-            ];
+            const addressFields = ['no_rumah', 'jalan', 'taman', 'bandar_field'];
             addressFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
@@ -1556,104 +1014,686 @@
             });
         }
 
-        function autoFillWarisAddress() {
-            // Get values from Pemohon address fields
-            const pemohonAddresses = {
-                noRumah: document.getElementById('no_rumah')?.value || '',
-                jalan: document.getElementById('jalan')?.value || '',
-                taman: document.getElementById('taman')?.value || '',
-                poskod: document.getElementById('poskod_field')?.value || '',
-                bandar: document.getElementById('bandar_field')?.value || ''
-            };
+        // ── Tanggungan Functions (same as register_blade) ─────────────────
+        let tanggunganCount = 0;
+        const MAX_TANGGUNGAN = 20;
 
-            // Get Waris address fields
-            const warisFields = {
-                noRumah: document.getElementById('waris_no_rumah'),
-                jalan: document.getElementById('waris_jalan'),
-                taman: document.getElementById('waris_taman'),
-                poskod: document.getElementById('waris_poskod'),
-                bandar: document.getElementById('waris_bandar')
-            };
+        const RELATIONSHIP_OPTIONS = [
+            'SUAMI',
+            'ISTERI',
+            'ANAK',
+            'IBU',
+            'AYAH',
+            'MERTUA',
+            'LAIN'
+        ];
 
-            // Auto-fill only if waris field is empty
-            if (warisFields.noRumah && !warisFields.noRumah.value && pemohonAddresses.noRumah) {
-                warisFields.noRumah.value = pemohonAddresses.noRumah;
-            }
-            if (warisFields.jalan && !warisFields.jalan.value && pemohonAddresses.jalan) {
-                warisFields.jalan.value = pemohonAddresses.jalan;
-            }
-            if (warisFields.taman && !warisFields.taman.value && pemohonAddresses.taman) {
-                warisFields.taman.value = pemohonAddresses.taman;
-            }
-            if (warisFields.poskod && !warisFields.poskod.value && pemohonAddresses.poskod) {
-                warisFields.poskod.value = pemohonAddresses.poskod;
-            }
-            if (warisFields.bandar && !warisFields.bandar.value && pemohonAddresses.bandar) {
-                warisFields.bandar.value = pemohonAddresses.bandar;
-            }
+        function parseMalaysiaIC(icNumber) {
+            let cleaned = icNumber.replace(/\D/g, '');
+            if (cleaned.length < 6) return null;
 
-            combineWarisAddressForSubmit();
+            let yearPart = cleaned.substring(0, 2);
+            let monthPart = cleaned.substring(2, 4);
+            let dayPart = cleaned.substring(4, 6);
+
+            if (!monthPart || !dayPart) return null;
+
+            let century = parseInt(yearPart, 10);
+            let fullYear = (century >= 0 && century <= 29) ? 2000 + century : 1900 + century;
+            let birthDate = new Date(fullYear, parseInt(monthPart, 10) - 1, parseInt(dayPart, 10));
+
+            if (birthDate.getFullYear() !== fullYear ||
+                birthDate.getMonth() !== parseInt(monthPart, 10) - 1 ||
+                birthDate.getDate() !== parseInt(dayPart, 10)) {
+                return null;
+            }
+            return birthDate;
         }
 
-        function setupWarisAddressWatchers() {
-            const warisFields = ['waris_no_rumah', 'waris_jalan', 'waris_taman', 'waris_poskod', 'waris_bandar'];
-            warisFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.addEventListener('input', function() {
-                        combineWarisAddressForSubmit();
+        function formatDateToInput(dateObj) {
+            let y = dateObj.getFullYear();
+            let m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            let d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function calculateAge(birthDate) {
+            let today = new Date();
+            return today.getFullYear() - birthDate.getFullYear();
+        }
+
+        function formatDateToDMY(dateObj) {
+            if (!dateObj || isNaN(dateObj.getTime())) return '';
+
+            let d = String(dateObj.getDate()).padStart(2, '0');
+            let m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            let y = dateObj.getFullYear();
+
+            return `${d}/${m}/${y}`;
+        }
+
+        function updateTanggunganDobAndAge(icInput) {
+            const index = icInput.dataset.index;
+            const card = icInput.closest('.tanggungan-card');
+            const tarikhInput = card.querySelector('[name$="[tarikh_lahir]"]');
+            const tarikhDisplay = document.getElementById(`tarikh_lahir_display_${index}`);
+            if (!tarikhInput) return;
+
+            let icValue = icInput.value;
+            if (!icValue || icValue.length === 0) {
+                tarikhInput.value = '';
+                if (tarikhDisplay) tarikhDisplay.value = '';
+                return;
+            }
+
+            let birthDate = parseMalaysiaIC(icValue);
+            if (birthDate) {
+                tarikhInput.value = formatDateToInput(birthDate);
+                if (tarikhDisplay) tarikhDisplay.value = formatDateToDMY(birthDate);
+            } else {
+                tarikhInput.value = '';
+                if (tarikhDisplay) tarikhDisplay.value = '';
+            }
+        }
+
+        function createTanggunganCard(index) {
+            const card = document.createElement('div');
+            card.className = 'tanggungan-card';
+            card.dataset.index = index;
+            card.id = `tanggungan_${index}`;
+
+            const num = index + 1;
+
+            card.innerHTML = `
+        <div class="card-header">
+            <span class="badge">Tanggungan</span>
+            <span class="card-number-badge">
+                <i class="fas fa-user"></i>
+                #${num}
+            </span>
+            <span class="text-xs text-gray-400 ml-auto">ID: T-${String(index + 1).padStart(3, '0')}</span>
+            ${index > 0 ? `<button type="button" class="remove-btn" onclick="removeTanggungan(${index})" title="Padam tanggungan">
+                                                    <i class="fas fa-times"></i>
+                                                </button>` : 
+            `<button type="button" class="remove-btn" onclick="removeTanggungan(${index})" title="Padam tanggungan" style="display:none;">
+                                                    <i class="fas fa-times"></i>
+                                                </button>`}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    Nama Penuh <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-400 ml-1">(Seperti Dalam MYKAD)</span>
+                </label>
+                <input type="text" name="tanggungan[${index}][nama]" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all uppercase"
+                    placeholder="MASUKKAN NAMA PENUH" required
+                    oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    No. Kad Pengenalan <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-400 ml-1">(Auto isi tarikh lahir)</span>
+                </label>
+                <input type="text" name="tanggungan[${index}][ic]" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all tanggungan-ic"
+                    placeholder="010413-03-1234" maxlength="14" required
+                    data-index="${index}">
+                <div id="tanggungan_ic_status_${index}" class="hidden text-xs mt-1 flex items-center gap-2"></div>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    Tarikh Lahir <span class="text-red-500">*</span>
+                    <span class="text-xs text-gray-400 ml-1">(Auto isi dari IC)</span>
+                </label>
+                <input type="text" id="tarikh_lahir_display_${index}"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 transition-all bg-gray-50"
+                    readonly
+                    placeholder="dd/mm/yyyy (Auto isi dari IC)">
+                <input type="hidden" name="tanggungan[${index}][tarikh_lahir]" 
+                    required>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    Hubungan <span class="text-red-500">*</span>
+                </label>
+                <select name="tanggungan[${index}][hubungan]" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all"
+                    required>
+                    <option value="">-- Pilih Hubungan --</option>
+                    ${RELATIONSHIP_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    Jantina
+                </label>
+                <select name="tanggungan[${index}][jantina]" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all">
+                    <option value="">-- Pilih Jantina --</option>
+                    <option value="LELAKI">LELAKI</option>
+                    <option value="PEREMPUAN">PEREMPUAN</option>
+                    <option value="LAIN">LAIN</option>
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    OKU?
+                </label>
+                <select name="tanggungan[${index}][oku]" 
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-djariah-500 focus:border-djariah-500 transition-all">
+                    <option value="0">Tidak</option>
+                    <option value="1">Ya</option>
+                </select>
+            </div>
+            <div class="space-y-2 md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700">
+                    Muat Naik Dokumen Sokongan
+                    <span class="text-xs text-gray-400 ml-1">(Sijil Lahir / Kad Pengenalan)</span>
+                </label>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800 flex items-center gap-2 mb-2">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Had saiz fail: <strong>5MB</strong>. Format dibenarkan: JPG, PNG, PDF sahaja.
+                </div>
+                <input type="file" name="tanggungan[${index}][dokumen]" 
+                    accept="image/jpeg,image/jpg,image/png,.pdf"
+                    class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-djariah-600 file:text-white hover:file:bg-djariah-700 tanggungan-file"
+                    onchange="previewTanggunganFile(this, ${index})"
+                    data-index="${index}">
+                <div id="tanggungan_file_info_${index}" class="hidden text-xs mt-1 flex items-center gap-2"></div>
+                <div id="tanggungan_preview_${index}" class="hidden mt-2">
+                    <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                    <img id="tanggungan_image_${index}" class="file-preview" onclick="openZoom(this)">
+                </div>
+            </div>
+        </div>
+    `;
+
+            return card;
+        }
+
+        function addTanggungan() {
+            if (tanggunganCount >= MAX_TANGGUNGAN) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Had Maksimum',
+                    text: `Anda hanya boleh menambah sehingga ${MAX_TANGGUNGAN} tanggungan.`,
+                    confirmButtonColor: '#ea580c'
+                });
+                return;
+            }
+
+            const container = document.getElementById('tanggunganContainer');
+            const index = tanggunganCount;
+            const card = createTanggunganCard(index);
+            container.appendChild(card);
+            tanggunganCount++;
+
+            const icInput = card.querySelector('.tanggungan-ic');
+            if (icInput) {
+                icInput.addEventListener('input', function(e) {
+                    let pos = this.selectionStart;
+                    let before = this.value;
+                    this.value = formatIC(this.value);
+                    let added = this.value.length - before.length;
+                    if (added > 0) pos += added;
+                    try {
+                        this.setSelectionRange(pos, pos);
+                    } catch (e) {}
+
+                    updateTanggunganDobAndAge(this);
+                    validateTanggunganIC(this);
+                });
+
+                if (icInput.value) {
+                    icInput.value = formatIC(icInput.value);
+                    updateTanggunganDobAndAge(icInput);
+                    validateTanggunganIC(icInput);
+                }
+            }
+
+            updateTanggunganCount();
+
+            setTimeout(() => {
+                card.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 100);
+
+            updateRemoveButtons();
+        }
+
+        function removeTanggungan(index) {
+            const card = document.getElementById(`tanggungan_${index}`);
+            if (!card) return;
+
+            const totalCards = document.querySelectorAll('.tanggungan-card').length;
+            if (totalCards <= 1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tanggungan Minimum',
+                    text: 'Anda perlu mempunyai sekurang-kurangnya SATU tanggungan.',
+                    confirmButtonColor: '#ea580c'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Padam Tanggungan?',
+                text: 'Anda pasti mahu memadam tanggungan ini? Tindakan ini tidak boleh dibatalkan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Padam',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    card.remove();
+                    tanggunganCount--;
+                    reindexTanggungan();
+                    updateTanggunganCount();
+                    updateRemoveButtons();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Tanggungan Dipadam',
+                        timer: 1500,
+                        showConfirmButton: false
                     });
                 }
             });
         }
 
-        function initAddressFeatures() {
-            setupAddressUppercase();
-            setupWarisAddressWatchers();
-            autoFillWarisAddress();
+        function reindexTanggungan() {
+            const cards = document.querySelectorAll('.tanggungan-card');
+            cards.forEach((card, idx) => {
+                card.id = `tanggungan_${idx}`;
+                card.dataset.index = idx;
 
-            // Watch pemohon fields to auto-fill waris
-            const pemohonFields = ['no_rumah', 'jalan', 'taman', 'poskod_field', 'bandar_field'];
-            pemohonFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.addEventListener('input', function() {
-                        const warisNoRumah = document.getElementById('waris_no_rumah');
-                        if (warisNoRumah && !warisNoRumah.value) {
-                            autoFillWarisAddress();
-                        }
-                        combineAddressForSubmit();
-                    });
+                const badge = card.querySelector('.badge');
+                if (badge) {
+                    badge.textContent = 'Tanggungan';
                 }
-            });
-        }
 
-        // Auto-fill when clicking Next from Pemohon tab
-        const nextToWarisBtn = document.querySelector('[data-next="waris"]');
-        if (nextToWarisBtn) {
-            nextToWarisBtn.addEventListener('click', function() {
-                setTimeout(autoFillWarisAddress, 150);
-            });
-        }
+                const numberBadge = card.querySelector('.card-number-badge');
+                if (numberBadge) {
+                    numberBadge.innerHTML = `<i class="fas fa-user"></i> #${idx + 1}`;
+                }
 
-        // Auto-fill in real-time when Pemohon types (only if waris empty)
-        pemohonFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('input', function() {
-                    const warisNoRumah = document.getElementById('waris_no_rumah');
-                    if (warisNoRumah && !warisNoRumah.value) {
-                        autoFillWarisAddress();
+                const idLabel = card.querySelector('.card-header .text-gray-400');
+                if (idLabel) {
+                    idLabel.textContent = `ID: T-${String(idx + 1).padStart(3, '0')}`;
+                }
+
+                const inputs = card.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        const newName = name.replace(/tanggungan\[\d+\]/, `tanggungan[${idx}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    if (input.dataset.index !== undefined) {
+                        input.dataset.index = idx;
                     }
                 });
+
+                const previewDiv = card.querySelector(`[id^="tanggungan_preview_"]`);
+                if (previewDiv) {
+                    previewDiv.id = `tanggungan_preview_${idx}`;
+                    const img = previewDiv.querySelector('img');
+                    if (img) img.id = `tanggungan_image_${idx}`;
+                }
+
+                const infoDiv = card.querySelector(`[id^="tanggungan_file_info_"]`);
+                if (infoDiv) {
+                    infoDiv.id = `tanggungan_file_info_${idx}`;
+                }
+
+                const statusDiv = card.querySelector(`[id^="tanggungan_ic_status_"]`);
+                if (statusDiv) {
+                    statusDiv.id = `tanggungan_ic_status_${idx}`;
+                }
+
+                const removeBtn = card.querySelector('.remove-btn');
+                if (removeBtn) {
+                    removeBtn.onclick = function() {
+                        removeTanggungan(idx);
+                    };
+                    if (idx === 0) {
+                        removeBtn.style.display = 'none';
+                    } else {
+                        removeBtn.style.display = 'flex';
+                    }
+                }
+            });
+        }
+
+        function updateTanggunganCount() {
+            const count = document.querySelectorAll('.tanggungan-card').length;
+            const countDisplay = document.getElementById('tanggunganCount');
+            if (countDisplay) {
+                countDisplay.textContent = `(${count})`;
             }
+        }
+
+        function updateRemoveButtons() {
+            const cards = document.querySelectorAll('.tanggungan-card');
+            cards.forEach((card, idx) => {
+                const removeBtn = card.querySelector('.remove-btn');
+                if (removeBtn) {
+                    if (idx === 0) {
+                        removeBtn.style.display = 'none';
+                    } else {
+                        removeBtn.style.display = 'flex';
+                    }
+                }
+            });
+        }
+
+        function validateTanggunganIC(input) {
+            const index = input.dataset.index;
+            const statusEl = document.getElementById(`tanggungan_ic_status_${index}`);
+            if (!statusEl) return;
+
+            const value = input.value;
+            const cleaned = value.replace(/\D/g, '');
+
+            if (cleaned.length === 0) {
+                statusEl.classList.add('hidden');
+                return;
+            }
+
+            if (cleaned.length < 12) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML =
+                    `<span class="text-yellow-600"><i class="fas fa-exclamation-circle"></i> ${12 - cleaned.length} digit lagi</span>`;
+                return;
+            }
+
+            if (!/^\d{6}-\d{2}-\d{4}$/.test(value)) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML =
+                    `<span class="text-red-600"><i class="fas fa-times-circle"></i> Format IC tidak sah</span>`;
+                return;
+            }
+
+            statusEl.classList.remove('hidden');
+            statusEl.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle"></i> Format IC sah</span>`;
+        }
+
+        function previewTanggunganFile(input, index) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const MAX_FILE_BYTES = 5 * 1024 * 1024;
+            const infoEl = document.getElementById(`tanggungan_file_info_${index}`);
+            const previewEl = document.getElementById(`tanggungan_preview_${index}`);
+            const imgEl = document.getElementById(`tanggungan_image_${index}`);
+
+            if (file.size > MAX_FILE_BYTES) {
+                if (infoEl) {
+                    infoEl.classList.remove('hidden');
+                    infoEl.innerHTML = `
+                <i class="fas fa-times-circle text-red-500"></i>
+                <span class="text-red-600">Saiz fail: <strong>${formatFileSize(file.size)}</strong> — melebihi had 5MB.</span>
+            `;
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fail Terlalu Besar',
+                    html: `Saiz fail yang dipilih ialah <strong>${formatFileSize(file.size)}</strong>.<br>Had maksimum ialah <strong>5MB</strong>.`,
+                    confirmButtonColor: '#ea580c',
+                });
+                input.value = '';
+                if (previewEl) previewEl.classList.add('hidden');
+                return;
+            }
+
+            if (infoEl) {
+                infoEl.classList.remove('hidden');
+                infoEl.innerHTML = `
+            <i class="fas fa-check-circle text-green-500"></i>
+            <span class="text-green-600">Saiz fail: <strong>${formatFileSize(file.size)}</strong> — OK</span>
+        `;
+            }
+
+            if (file.type.startsWith('image/') && previewEl && imgEl) {
+                imgEl.src = URL.createObjectURL(file);
+                previewEl.classList.remove('hidden');
+            } else {
+                if (previewEl) previewEl.classList.add('hidden');
+            }
+        }
+
+        function getTanggunganData() {
+            const cards = document.querySelectorAll('.tanggungan-card');
+            const data = [];
+
+            cards.forEach((card, idx) => {
+                const nama = card.querySelector(`input[name="tanggungan[${idx}][nama]"]`)?.value || '';
+                const ic = card.querySelector(`input[name="tanggungan[${idx}][ic]"]`)?.value || '';
+                const tarikhLahir = card.querySelector(`input[name="tanggungan[${idx}][tarikh_lahir]"]`)?.value ||
+                    '';
+                const hubungan = card.querySelector(`select[name="tanggungan[${idx}][hubungan]"]`)?.value || '';
+                const fileInput = card.querySelector(`input[name="tanggungan[${idx}][dokumen]"]`);
+
+                const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+                data.push({
+                    nama,
+                    ic,
+                    tarikh_lahir: tarikhLahir,
+                    hubungan,
+                    hasFile,
+                    fileName: hasFile ? fileInput.files[0].name : null
+                });
+            });
+
+            return data;
+        }
+
+        // ── Zoom modal ───────────────────────────────────────────────────
+        function openZoom(img) {
+            document.getElementById('zoomImage').src = img.src;
+            document.getElementById('zoomModal').classList.remove('hidden');
+        }
+
+        function closeZoom() {
+            document.getElementById('zoomModal').classList.add('hidden');
+        }
+        document.getElementById('zoomModal').addEventListener('click', e => {
+            if (e.target.id === 'zoomModal') closeZoom();
         });
 
-        // Auto uppercase for waris_nama field
-        const warisNamaInput = document.querySelector('input[name="waris_nama"]');
-        if (warisNamaInput) {
-            warisNamaInput.addEventListener('input', function(e) {
-                this.value = this.value.toUpperCase();
+        // ── Load Harga on page load (fixed masjid) ────────────────────────
+        document.addEventListener('DOMContentLoaded', function() {
+            const masjidId = '{{ $masjid->id }}';
+
+            if (masjidId) {
+                fetch('/get-hargakhairat/' + masjidId)
+                    .then(r => {
+                        if (!r.ok) throw new Error();
+                        return r.json();
+                    })
+                    .then(h => {
+                        const byr = parseFloat(h.bayaran_tahunan ?? 0);
+                        const yur = parseFloat(h.yuran_pendaftaran ?? 0);
+                        document.getElementById('bayaran_tahunan') &&
+                            (document.getElementById('bayaran_tahunan').innerText = 'RM ' + byr.toFixed(2));
+                        document.getElementById('yuran_pendaftaran') &&
+                            (document.getElementById('yuran_pendaftaran').innerText = 'RM ' + yur.toFixed(2));
+                        document.getElementById('jumlah_bayaran') &&
+                            (document.getElementById('jumlah_bayaran').innerText = 'RM ' + (byr + yur).toFixed(
+                                2));
+                    })
+                    .catch(() => {});
+            }
+
+            setupAddressUppercase();
+            combineAddressForSubmit();
+
+            // Tambah tanggungan pertama secara automatik
+            addTanggungan();
+            document.getElementById('addTanggunganBtn')?.addEventListener('click', addTanggungan);
+            document.getElementById('addTanggunganBottomBtn')?.addEventListener('click', addTanggungan);
+
+            // Uppercase for nama
+            const namaField = document.querySelector('input[name="nama"]');
+            if (namaField) {
+                namaField.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            }
+
+            // Expose functions globally
+            window.addTanggungan = addTanggungan;
+            window.removeTanggungan = removeTanggungan;
+            window.previewTanggunganFile = previewTanggunganFile;
+            window.openZoom = openZoom;
+            window.closeZoom = closeZoom;
+            window.formatIC = formatIC;
+            window.formatFileSize = formatFileSize;
+        });
+
+        // ── AJAX Submit with SweetAlert ────────────────────────────────────
+        const publicRegisterForm = document.getElementById('publicRegisterForm');
+        if (publicRegisterForm) {
+            publicRegisterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // 1. Uppercase nama
+                const namaField = this.querySelector('input[name="nama"]');
+                if (namaField && namaField.value) {
+                    namaField.value = namaField.value.toUpperCase();
+                }
+
+                // 2. Combine address
+                combineAddressForSubmit();
+
+                // 3. Collect tanggungan data
+                const tanggunganData = getTanggunganData();
+                if (tanggunganData.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tiada Tanggungan',
+                        text: 'Sila tambah sekurang-kurangnya satu tanggungan.',
+                        confirmButtonColor: '#ea580c'
+                    });
+                    return;
+                }
+
+                let hasError = false;
+                tanggunganData.forEach((t) => {
+                    if (!t.nama || !t.ic || !t.tarikh_lahir || !t.hubungan) {
+                        hasError = true;
+                    }
+                    if (t.ic && !/^\d{6}-\d{2}-\d{4}$/.test(t.ic)) {
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Maklumat Tanggungan Tidak Lengkap',
+                        text: 'Sila pastikan semua maklumat tanggungan diisi dengan lengkap dan sah.',
+                        confirmButtonColor: '#ea580c'
+                    });
+                    return;
+                }
+
+                // 4. Store tanggungan data as JSON
+                const tanggunganHidden = document.getElementById('tanggungan_data');
+                if (tanggunganHidden) {
+                    tanggunganHidden.value = JSON.stringify(tanggunganData);
+                }
+
+                // 5. Build FormData
+                const formData = new FormData(this);
+
+                if (tanggunganHidden) {
+                    formData.append('tanggungan_data', tanggunganHidden.value);
+                }
+
+                // 6. Append each tanggungan file
+                const tanggunganFiles = document.querySelectorAll('.tanggungan-file');
+                tanggunganFiles.forEach((input, idx) => {
+                    if (input.files && input.files.length > 0) {
+                        formData.append(`tanggungan[${idx}][dokumen]`, input.files[0]);
+                    }
+                });
+
+                // 7. Show loading
+                Swal.fire({
+                    title: 'Memproses Pendaftaran...',
+                    text: 'Sila tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // 8. Submit via AJAX
+                fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Permohonan Dihantar!',
+                                html: `<p>${data.message}</p>
+                                   <p class="text-sm mt-3 text-blue-600">
+                                       <i class="fas fa-envelope"></i> Sila semak e-mel anda
+                                   </p>`,
+                                confirmButtonColor: '#ea580c',
+                                confirmButtonText: 'OK',
+                                timer: 4000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                window.location.href = data.redirect_url;
+                            });
+                        } else {
+                            let errorHtml = '';
+                            if (typeof data.errors === 'string') {
+                                errorHtml = `<p class="text-sm">${data.errors}</p>`;
+                            } else if (typeof data.errors === 'object') {
+                                const msgs = Object.values(data.errors).flat();
+                                errorHtml = '<ul class="text-left text-sm list-disc pl-4">' +
+                                    msgs.map(m => `<li>${m}</li>`).join('') +
+                                    '</ul>';
+                            } else {
+                                errorHtml = '<p class="text-sm">Sila semak maklumat yang diisi.</p>';
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Pendaftaran Gagal',
+                                html: `<div class="text-left">
+                                       <p class="font-semibold text-red-600 mb-2">Sila semak maklumat berikut:</p>
+                                       ${errorHtml}
+                                   </div>`,
+                                confirmButtonColor: '#ea580c'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Ralat Sistem',
+                            text: 'Terjadi masalah semasa memproses pendaftaran. Sila cuba lagi.',
+                            confirmButtonColor: '#ea580c'
+                        });
+                    });
             });
         }
     </script>

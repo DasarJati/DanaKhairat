@@ -165,6 +165,63 @@
                             $barColor = 'bg-gray-500';
                             $hasSubscription = false;
                         }
+
+                        $statusConfig = [
+                            'pending_payment' => [
+                                'label' => 'Tertunggak Bayaran',
+                                'color' => 'bg-amber-500',
+                                'icon' => 'fa-clock',
+                            ],
+                            'paid' => [
+                                'label' => 'Dibayar',
+                                'color' => 'bg-emerald-500',
+                                'icon' => 'fa-check-circle',
+                            ],
+                            'active' => [
+                                'label' => 'Aktif',
+                                'color' => 'bg-green-600',
+                                'icon' => 'fa-check-circle',
+                            ],
+                            'inactive' => [
+                                'label' => 'Tidak Aktif',
+                                'color' => 'bg-gray-500',
+                                'icon' => 'fa-circle',
+                            ],
+                            'expired' => [
+                                'label' => 'Tamat Tempoh',
+                                'color' => 'bg-red-600',
+                                'icon' => 'fa-exclamation-triangle',
+                            ],
+                            'pending' => [
+                                'label' => 'Dalam Proses',
+                                'color' => 'bg-blue-500',
+                                'icon' => 'fa-spinner',
+                            ],
+                            'waiting_verification' => [
+                                'label' => 'Menunggu Semakan',
+                                'color' => 'bg-orange-500',
+                                'icon' => 'fa-spinner',
+                            ],
+                            'rejected' => [
+                                'label' => 'Ditolak',
+                                'color' => 'bg-rose-600',
+                                'icon' => 'fa-times-circle',
+                            ],
+                            'cancelled' => [
+                                'label' => 'Dibatalkan',
+                                'color' => 'bg-red-400',
+                                'icon' => 'fa-ban',
+                            ],
+                            'default' => [
+                                'label' => 'Tiada Status',
+                                'color' => 'bg-gray-400',
+                                'icon' => 'fa-question-circle',
+                            ],
+                        ];
+
+                        // Get the status key, default to 'default' if not found
+                        $statusKey = $subscription->status ?? 'default';
+                        $config = $statusConfig[$statusKey] ?? $statusConfig['default'];
                     @endphp
 
                     @if ($waris->isNotEmpty())
@@ -202,25 +259,20 @@
                                 <div class="flex items-center justify-between">
                                     <span
                                         class="text-[8px] sm:text-xs font-bold uppercase tracking-widest text-black">Membership</span>
-                                    @if ($isExpired)
-                                        <span
-                                            class="px-2 py-0.5 bg-rose-600 text-white rounded text-[8px] sm:text-[10px] font-bold flex items-center gap-1">
-                                            <i class="fas fa-exclamation-circle text-[8px]"></i>
-                                            EXPIRED
-                                        </span>
-                                    @else
-                                        <span
-                                            class="px-2 py-0.5 bg-emerald-600 text-white rounded text-[8px] sm:text-[10px] font-bold flex items-center gap-1">
-                                            <i class="fas fa-check-circle text-[8px]"></i>
-                                            AKTIF
-                                        </span>
-                                    @endif
+
+                                    <span
+                                        class="p-1 {{ $config['color'] }} text-white rounded-full text-xs sm:text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                                        
+                                        {{ $config['label'] }}
+                                    </span>
+
                                 </div>
 
                                 <div class="flex justify-between items-end gap-2 sm:gap-3">
                                     <div>
                                         <p class="text-[8px] sm:text-[10px] text-slate-700 font-medium">Mula</p>
-                                        <p class="text-xs sm:text-sm font-bold text-black">{{ $start->format('d/m/Y') }}</p>
+                                        <p class="text-xs sm:text-sm font-bold text-black">{{ $start->format('d/m/Y') }}
+                                        </p>
                                     </div>
                                     <p class="text-xl sm:text-2xl text-slate-100 font-medium">-</p>
                                     <div class="text-right">
@@ -396,8 +448,8 @@
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center">
                                 <div class="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
-                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -552,46 +604,46 @@
 
                     <div class="p-4 sm:p-5 space-y-3">
                         <div class="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-lg p-3 sm:p-4">
-                        <div class="flex items-center mb-2">
-                            <div class="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
-                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <span class="font-medium text-gray-700 text-xs sm:text-sm">Tempoh Sah Khairat</span>
-                        </div>
-                        <p class="text-xs sm:text-sm text-gray-600 ml-8 sm:ml-11">
-                            Sehingga: <span
-                                class="font-bold text-blue-700">{{ $subscription && $subscription->end_date ? date('d M Y', strtotime($subscription->end_date)) : '-' }}</span>
-                        </p>
-                    </div>
-                        <div class="bg-gradient-to-r from-green-50 to-white border border-green-100 rounded-lg p-3 sm:p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center">
-                                <div class="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
-                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex items-center mb-2">
+                                <div class="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <span class="font-medium text-gray-700 text-xs sm:text-sm">Status Keahlian</span>
+                                <span class="font-medium text-gray-700 text-xs sm:text-sm">Tempoh Sah Khairat</span>
                             </div>
-                            <span
-                                class="px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold {{ $statusColor }}">{{ $statusText }}</span>
+                            <p class="text-xs sm:text-sm text-gray-600 ml-8 sm:ml-11">
+                                Sehingga: <span
+                                    class="font-bold text-blue-700">{{ $subscription && $subscription->end_date ? date('d M Y', strtotime($subscription->end_date)) : '-' }}</span>
+                            </p>
                         </div>
-                        @if (!$isEligible && !$hasDeathRecord && !$hasPendingRecord)
-                            <div class="mt-2 text-[10px] sm:text-xs text-gray-500 ml-8 sm:ml-11">
-                                @if (!$isUserActive)
-                                    <span class="text-red-600">⚠️ Akaun pengguna tidak aktif</span>
-                                @elseif (!$isSubscriptionValid)
-                                    <span class="text-orange-600">⚠️ Keahlian khairat telah tamat tempoh</span>
-                                @endif
+                        <div class="bg-gradient-to-r from-green-50 to-white border border-green-100 rounded-lg p-3 sm:p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <div class="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
+                                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <span class="font-medium text-gray-700 text-xs sm:text-sm">Status Keahlian</span>
+                                </div>
+                                <span
+                                    class="px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold {{ $statusColor }}">{{ $statusText }}</span>
                             </div>
-                        @endif
-                    </div>
+                            @if (!$isEligible && !$hasDeathRecord && !$hasPendingRecord)
+                                <div class="mt-2 text-[10px] sm:text-xs text-gray-500 ml-8 sm:ml-11">
+                                    @if (!$isUserActive)
+                                        <span class="text-red-600">⚠️ Akaun pengguna tidak aktif</span>
+                                    @elseif (!$isSubscriptionValid)
+                                        <span class="text-orange-600">⚠️ Keahlian khairat telah tamat tempoh</span>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="p-4 sm:p-5 pt-0">
@@ -610,11 +662,11 @@
                             <button
                                 onclick="openDeathModal({{ $fa->id }}, '{{ addslashes($fa->nama) }}', '{{ $fa->ic }}')"
                                 class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-2 sm:py-3 rounded-xl flex items-center justify-center text-sm sm:text-base">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                                 Melaporkan Kematian
                             </button>
                         @elseif ($faShowExpired)
@@ -1647,7 +1699,7 @@
                                 </span>
                             </div>
                             ${data.catatan && data.catatan !== '-' ? `
-                                                                                                                                                                                               ` : ''}
+                                                                                                                                                                                                       ` : ''}
                             <div class="border-t pt-2 mt-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-600">Sijil Kematian:</span>

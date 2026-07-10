@@ -11,18 +11,14 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'masjid_id',
-        'name',
         'amount',
         'payment_method',
         'status',
-        'resit_path',
-        'payment',
+        'receipt_path',
         'remarks',
         'type',
-        'transaction_type',
+        'flow_type',
         'paid_at',
-        'wakalah_fee',
-        'net_amount',
         'bill_code',
         'reference_type',
         'reference_id',
@@ -30,10 +26,10 @@ class Payment extends Model
 
     protected $casts = [
         'paid_at'   => 'datetime',
-        'created_at'=> 'datetime',
+        'created_at' => 'datetime',
     ];
 
-     public function getNetAmountAttribute()
+    public function getNetAmountAttribute()
     {
         return max(0, $this->amount - 10);
     }
@@ -44,19 +40,23 @@ class Payment extends Model
         return $this->belongsTo(User::class);
     }
 
-       public function masjid()
+    public function masjid()
     {
         return $this->belongsTo(masjid::class, 'masjid_id', 'id');
     }
 
-       public function ahliKariah()
+    public function ahliKariah()
     {
-    return $this->hasMany(AhliKariah::class, 'masjid_id', 'id');
+        return $this->hasMany(AhliKariah::class, 'masjid_id', 'id');
     }
 
-        public function transferBack()
+    public function transferBack()
     {
         return $this->hasOne(TransferBack::class);
     }
 
+    public function subscription()
+    {
+        return $this->hasOne(SubscriptionsKariah::class, 'payment_id', 'id');
+    }
 }

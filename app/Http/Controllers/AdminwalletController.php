@@ -117,7 +117,7 @@ public function uploadResit(Request $request, $id)
             'amount' => $payment->amount,
             'final_amount' => $payment->amount - $wakalah,
             'paid_by' => 'null',
-            'resit_path' => $path,
+            'receipt_path' => $path,
         ]);
 
         DB::commit();

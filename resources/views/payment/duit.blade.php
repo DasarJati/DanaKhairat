@@ -65,8 +65,8 @@
                         </select>
 
                         <!-- Preserve existing transaction filters -->
-                        @if (request('transaction_type') && request('transaction_type') != 'all')
-                            <input type="hidden" name="transaction_type" value="{{ request('transaction_type') }}">
+                        @if (request('flow_type') && request('flow_type') != 'all')
+                            <input type="hidden" name="flow_type" value="{{ request('flow_type') }}">
                         @endif
                         @if (request('start_date'))
                             <input type="hidden" name="start_date" value="{{ request('start_date') }}">
@@ -76,7 +76,7 @@
                         @endif
 
                         <!-- Reset Filters Button -->
-                        @if (request('year') || request('month') || request('transaction_type') || request('start_date') || request('end_date'))
+                        @if (request('year') || request('month') || request('flow_type') || request('start_date') || request('end_date'))
                             <a href="{{ route('finance') }}"
                                 class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">
                                 <i class="fas fa-times mr-2"></i> Reset Semua
@@ -97,10 +97,10 @@
                         Bulan:
                         {{ ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sept', 'Okt', 'Nov', 'Dis'][$selectedMonth - 1] }}
                     </span>
-                    {{-- @if (request('transaction_type') && request('transaction_type') != 'all')
+                    {{-- @if (request('flow_type') && request('flow_type') != 'all')
                         <span
                             class="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                            Jenis: {{ request('transaction_type') == 'transaction_in' ? 'Masuk' : 'Keluar' }}
+                            Jenis: {{ request('flow_type') == 'transaction_in' ? 'Masuk' : 'Keluar' }}
                         </span>
                     @endif
                     @if (request('start_date'))
@@ -225,16 +225,16 @@
                         <form method="GET" action="{{ route('finance') }}" id="transactionFilterForm"
                             class="flex flex-col sm:flex-row gap-3">
                             <!-- Transaction Type Filter - Auto submit on change -->
-                            <select name="transaction_type"
+                            <select name="flow_type"
                                 class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
                                 onchange="this.form.submit()">
-                                <option value="all" {{ request('transaction_type') == 'all' ? 'selected' : '' }}>Semua
+                                <option value="all" {{ request('flow_type') == 'all' ? 'selected' : '' }}>Semua
                                     Transaksi</option>
                                 <option value="transaction_in"
-                                    {{ request('transaction_type') == 'transaction_in' ? 'selected' : '' }}>Transaksi Masuk
+                                    {{ request('flow_type') == 'transaction_in' ? 'selected' : '' }}>Transaksi Masuk
                                 </option>
                                 <option value="transaction_out"
-                                    {{ request('transaction_type') == 'transaction_out' ? 'selected' : '' }}>Transaksi
+                                    {{ request('flow_type') == 'transaction_out' ? 'selected' : '' }}>Transaksi
                                     Keluar</option>
                             </select>
 
@@ -261,7 +261,7 @@
                             @endif
 
                             <!-- Reset Button (only shows when filters are active) -->
-                            @if (request()->has('transaction_type') || request()->has('start_date') || request()->has('end_date'))
+                            @if (request()->has('flow_type') || request()->has('start_date') || request()->has('end_date'))
                                 <a href="{{ route('finance', ['year' => request('year'), 'month' => request('month')]) }}"
                                     class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors text-center">
                                     <i class="fas fa-times mr-2"></i> Reset
@@ -272,15 +272,15 @@
 
                     <!-- Active Transaction Filters Display -->
                     @if (
-                        (request()->filled('transaction_type') && request('transaction_type') != 'all') ||
+                        (request()->filled('flow_type') && request('flow_type') != 'all') ||
                             request()->filled('start_date') ||
                             request()->filled('end_date'))
                         <div class="mt-4 flex flex-wrap items-center gap-2">
                             <span class="text-xs font-semibold text-slate-500">Tapis Transaksi:</span>
-                            @if (request('transaction_type') && request('transaction_type') != 'all')
+                            @if (request('flow_type') && request('flow_type') != 'all')
                                 <span
                                     class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                    {{ request('transaction_type') == 'transaction_in' ? 'Transaksi Masuk' : 'Transaksi Keluar' }}
+                                    {{ request('flow_type') == 'transaction_in' ? 'Transaksi Masuk' : 'Transaksi Keluar' }}
                                 </span>
                             @endif
                             @if (request('start_date'))
@@ -348,7 +348,7 @@
                                                 'transaction_in' => '+',
                                                 'transaction_out' => '−',
                                             ];
-                                            $type = $transaction->transaction_type;
+                                            $type = $transaction->flow_type;
                                             $color = $colors[$type] ?? 'text-slate-400';
                                             $symbol = $symbols[$type] ?? '';
                                         @endphp
@@ -416,7 +416,7 @@
                                             </svg>
                                             <p class="mt-4 text-slate-400 text-xs font-black uppercase tracking-widest">
                                                 Tiada rekod transaksi</p>
-                                            @if (request()->has('transaction_type') || request()->has('start_date') || request()->has('end_date'))
+                                            @if (request()->has('flow_type') || request()->has('start_date') || request()->has('end_date'))
                                                 <a href="{{ route('finance', ['year' => request('year'), 'month' => request('month')]) }}"
                                                     class="mt-4 text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                                                     <i class="fas fa-undo mr-1"></i> Reset penapis

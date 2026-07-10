@@ -60,7 +60,7 @@
                                     </div>
 
                                     <div
-                                        class="hidden md:block absolute top-[-30px] right-[-40px] opacity-40 md:opacity-100 group-hover:scale-110 transition-transform duration-500">
+                                        class="hidden md:block absolute top-[-30px] right-[-40px] opacity-40 md:opacity-100 group-hover:scale-110 transition-transform duration-500 z-50">
                                         <img src="https://www.pngall.com/wp-content/uploads/4/Islam-Mosque-PNG-Pic.png"
                                             alt="Mosque Icon"
                                             class="w-48 h-48 md:w-56 md:h-56 object-contain drop-shadow-2xl brightness-110">
@@ -70,7 +70,7 @@
                         </div>
 
                         <div
-                            class="col-span-1 relative bg-gradient-to-r from-[#2c7a7b] to-[#fbd38d] rounded-3xl shadow-lg text-white p-6 overflow-hidden border border-white/10">
+                            class="col-span-1 relative bg-gradient-to-r from-[#2c7a7b] to-[#fbd38d] rounded-3xl shadow-lg text-white p-6 overflow-hidden border border-white/10 z-60">
                             <div class="relative z-10 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                                 <div class="flex-1 w-full">
                                     <p class="text-xs uppercase tracking-[0.2em] text-white/70 font-bold mb-1">
@@ -84,6 +84,8 @@
                                             ->orderBy('end_date', 'desc')
                                             ->orderBy('created_at', 'desc')
                                             ->first();
+
+                                        // Default status if no subscription exists
                                         $status = strtolower($subscription->status ?? 'expired');
 
                                         // Check if subscription is actually active (not expired)
@@ -93,15 +95,89 @@
                                             $subscription->end_date &&
                                             \Carbon\Carbon::now()->lte(\Carbon\Carbon::parse($subscription->end_date));
 
-                                        $displayStatus = $isActuallyActive ? 'AKTIF' : 'TAMAT';
-                                        $statusColor = $isActuallyActive ? 'text-emerald-300' : 'text-red-300';
+                                        // Status configuration
+                                        $statusConfig = [
+                                            'active' => [
+                                                'label' => 'AKTIF',
+                                                'color' => 'text-emerald-300',
+                                                'bg' => 'bg-emerald-500/20',
+                                                'border' => 'border-emerald-400/30',
+                                                'icon' => 'fa-circle-check',
+                                            ],
+                                            'expired' => [
+                                                'label' => 'TAMAT TEMPOH',
+                                                'color' => 'text-red-300',
+                                                'bg' => 'bg-red-500/20',
+                                                'border' => 'border-red-400/30',
+                                                'icon' => 'fa-circle-exclamation',
+                                            ],
+                                            'cancelled' => [
+                                                'label' => 'DIBATALKAN',
+                                                'color' => 'text-gray-300',
+                                                'bg' => 'bg-gray-500/20',
+                                                'border' => 'border-gray-400/30',
+                                                'icon' => 'fa-ban',
+                                            ],
+                                            'pending_payment' => [
+                                                'label' => 'BAYARAN TERTUNGGAK',
+                                                'color' => 'text-amber-300',
+                                                'bg' => 'bg-amber-500/20',
+                                                'border' => 'border-amber-400/30',
+                                                'icon' => 'fa-clock',
+                                            ],
+                                            'waiting_verification' => [
+                                                'label' => 'MENUNGGU SEMAKAN',
+                                                'color' => 'text-blue-300',
+                                                'bg' => 'bg-blue-500/20',
+                                                'border' => 'border-blue-400/30',
+                                                'icon' => 'fa-spinner',
+                                            ],
+                                            'paid' => [
+                                                'label' => 'DIBAYAR',
+                                                'color' => 'text-emerald-300',
+                                                'bg' => 'bg-emerald-500/20',
+                                                'border' => 'border-emerald-400/30',
+                                                'icon' => 'fa-check-double',
+                                            ],
+                                            'pending' => [
+                                                'label' => 'DALAM PROSES',
+                                                'color' => 'text-blue-300',
+                                                'bg' => 'bg-blue-500/20',
+                                                'border' => 'border-blue-400/30',
+                                                'icon' => 'fa-spinner fa-pulse',
+                                            ],
+                                            'rejected' => [
+                                                'label' => 'DITOLAK',
+                                                'color' => 'text-rose-300',
+                                                'bg' => 'bg-rose-500/20',
+                                                'border' => 'border-rose-400/30',
+                                                'icon' => 'fa-times-circle',
+                                            ],
+                                            'default' => [
+                                                'label' => 'TIADA STATUS',
+                                                'color' => 'text-gray-300',
+                                                'bg' => 'bg-gray-500/20',
+                                                'border' => 'border-gray-400/30',
+                                                'icon' => 'fa-question-circle',
+                                            ],
+                                        ];
+
+                                        // Determine which status config to use
+                                        if ($status === 'active' && $isActuallyActive) {
+                                            $config = $statusConfig['active'];
+                                        } elseif ($status === 'active' && !$isActuallyActive) {
+                                            $config = $statusConfig['expired'];
+                                        } else {
+                                            $config = $statusConfig[$status] ?? $statusConfig['default'];
+                                        }
                                     @endphp
 
-                                    <div class="flex items-center gap-3 mb-6">
+                                    <div
+                                        class="flex items-center gap-3 p-2">
+                                        <i class="fas  {{ $config['color'] }} text-2xl"></i>
                                         <span
-                                            class="text-4xl md:text-5xl font-extrabold tracking-tighter drop-shadow-md {{ $statusColor }}">
-                                            {{ $displayStatus }}
-                                        </span>
+                                            class="text-3xl md:text-4xl font-extrabold tracking-tighter drop-shadow-md {{ $config['color'] }}">
+                                           {{ $config['label'] }}
                                     </div>
 
                                     @php
@@ -537,38 +613,91 @@
     .custom-scrollbar::-webkit-scrollbar {
         width: 4px;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 10px;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #cbd5e1;
         border-radius: 10px;
     }
-    
+
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
     }
-    
+
     /* Badge colors */
-    .bg-emerald-100 { background-color: #d1fae5; }
-    .text-emerald-700 { color: #047857; }
-    .bg-gray-100 { background-color: #f3f4f6; }
-    .text-gray-700 { color: #374151; }
-    .bg-blue-100 { background-color: #dbeafe; }
-    .text-blue-700 { color: #1d4ed8; }
-    .bg-green-100 { background-color: #dcfce7; }
-    .text-green-700 { color: #15803d; }
-    .bg-amber-100 { background-color: #fef3c7; }
-    .text-amber-700 { color: #b45309; }
-    .bg-purple-100 { background-color: #f3e8ff; }
-    .text-purple-700 { color: #6b21a5; }
-    .bg-red-100 { background-color: #fee2e2; }
-    .text-red-700 { color: #b91c1c; }
-    .bg-cyan-100 { background-color: #cffafe; }
-    .text-cyan-700 { color: #0e7490; }
-    .bg-indigo-100 { background-color: #e0e7ff; }
-    .text-indigo-700 { color: #4338ca; }
+    .bg-emerald-100 {
+        background-color: #d1fae5;
+    }
+
+    .text-emerald-700 {
+        color: #047857;
+    }
+
+    .bg-gray-100 {
+        background-color: #f3f4f6;
+    }
+
+    .text-gray-700 {
+        color: #374151;
+    }
+
+    .bg-blue-100 {
+        background-color: #dbeafe;
+    }
+
+    .text-blue-700 {
+        color: #1d4ed8;
+    }
+
+    .bg-green-100 {
+        background-color: #dcfce7;
+    }
+
+    .text-green-700 {
+        color: #15803d;
+    }
+
+    .bg-amber-100 {
+        background-color: #fef3c7;
+    }
+
+    .text-amber-700 {
+        color: #b45309;
+    }
+
+    .bg-purple-100 {
+        background-color: #f3e8ff;
+    }
+
+    .text-purple-700 {
+        color: #6b21a5;
+    }
+
+    .bg-red-100 {
+        background-color: #fee2e2;
+    }
+
+    .text-red-700 {
+        color: #b91c1c;
+    }
+
+    .bg-cyan-100 {
+        background-color: #cffafe;
+    }
+
+    .text-cyan-700 {
+        color: #0e7490;
+    }
+
+    .bg-indigo-100 {
+        background-color: #e0e7ff;
+    }
+
+    .text-indigo-700 {
+        color: #4338ca;
+    }
 </style>

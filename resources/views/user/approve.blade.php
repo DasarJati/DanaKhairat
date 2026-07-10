@@ -46,8 +46,8 @@
                 <div><strong>Tarikh Bayar:</strong> {{ $payment->paid_at }}</div>
                 <div class="md:col-span-2">
                     <strong>Resit:</strong>
-                    @if($payment->resit_path)
-                        <a href="{{ asset('images/uploads/'.$payment->resit_path) }}" target="_blank" class="text-blue-600 underline">Lihat Resit</a>
+                    @if($payment->receipt_path)
+                        <a href="{{ asset('images/uploads/'.$payment->receipt_path) }}" target="_blank" class="text-blue-600 underline">Lihat Resit</a>
                     @else
                         Tiada
                     @endif

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Wallet;
 use App\Models\Payment;
 use App\Models\Masjid;
@@ -45,8 +46,8 @@ class WalletController extends Controller
         $selectedMonth = $request->input('month', date('n'));
 
         // Apply transaction type filter
-        if ($request->filled('transaction_type') && $request->transaction_type != 'all') {
-            $paymentsQuery->where('transaction_type', $request->transaction_type);
+        if ($request->filled('flow_type') && $request->flow_type != 'all') {
+            $paymentsQuery->where('flow_type', $request->flow_type);
         }
 
         // Apply date filters
@@ -65,21 +66,21 @@ class WalletController extends Controller
 
         // TOTAL DANA FOR SELECTED YEAR
         $totalDana = Payment::where('masjid_id', $user->masjid_id)
-            ->where('transaction_type', 'transaction_in')
+            ->where('flow_type', 'transaction_in')
             ->where('type', '!=', 'Add Dana')
             ->whereYear('created_at', $selectedYear)
             ->sum('amount');
 
         // TOTAL EXPENSE FOR SELECTED YEAR
         $totalOut = Payment::where('masjid_id', $user->masjid_id)
-            ->where('transaction_type', 'transaction_out')
+            ->where('flow_type', 'transaction_out')
             ->where('type', '!=', 'Add Dana')
             ->whereYear('created_at', $selectedYear)
             ->sum('amount');
 
         // TOTAL INCOME FOR SELECTED MONTH
         $totalIncomeThisMonth = Payment::where('masjid_id', $user->masjid_id)
-            ->where('transaction_type', 'transaction_in')
+            ->where('flow_type', 'transaction_in')
             ->where('type', '!=', 'Add Dana')
             ->whereYear('created_at', $selectedYear)
             ->whereMonth('created_at', $selectedMonth)
@@ -111,14 +112,14 @@ class WalletController extends Controller
 
         for ($month = 1; $month <= 12; $month++) {
             $income = Payment::where('masjid_id', $user->masjid_id)
-                ->where('transaction_type', 'transaction_in')
+                ->where('flow_type', 'transaction_in')
                 ->where('type', '!=', 'Add Dana')
                 ->whereYear('created_at', $selectedYear)
                 ->whereMonth('created_at', $month)
                 ->sum('amount');
 
             $expense = Payment::where('masjid_id', $user->masjid_id)
-                ->where('transaction_type', 'transaction_out')
+                ->where('flow_type', 'transaction_out')
                 ->where('type', '!=', 'Add Dana')
                 ->whereYear('created_at', $selectedYear)
                 ->whereMonth('created_at', $month)
@@ -165,35 +166,12 @@ class WalletController extends Controller
             ]);
         }
 
-        // Handle payment approval/rejection
-        if ($request->has('action') && $request->has('payment_id')) {
-            $payment = Payment::find($request->payment_id);
-
-            if ($payment) {
-                if ($request->action === 'approve') {
-                    $payment->status = 'SUCCESS';
-                    $payment->save();
-
-                    if ($payment->type === 'Renew Membership' || $payment->transaction_type === 'transaction_in') {
-                        $this->handleSubscriptionRenewal($payment);
-                    }
-
-                    session()->flash('success', 'Pembayaran telah diluluskan dan keahlian diperbaharui.');
-                } elseif ($request->action === 'reject') {
-                    $payment->status = 'FAILED';
-                    $payment->save();
-                    session()->flash('error', 'Pembayaran telah ditolak.');
-                }
-            }
-
-            return redirect()->route('finance.dana');
-        }
-
-        // Get PENDING payments query with filters
+        // Get PENDING VERIFICATION payments query with filters
+        // (approve/reject dikendalikan oleh updatePaymentStatus() -> route('finance.status.update'))
         $pendingQuery = Payment::where('masjid_id', $user->masjid_id)
-            ->where('status', 'PENDING')
-            ->where('type', 'Renew Membership')
-            ->with('user');
+            ->where('status', 'waiting_verification')
+            ->whereIn('type', ['new_member', 'renew_member'])
+            ->with(['user', 'subscription']);
 
         // Handle quick date filters
         if ($request->has('quick_date')) {
@@ -256,10 +234,11 @@ class WalletController extends Controller
 
         $request->validate([
             'payment_id' => 'required|exists:payments,id',
-            'action' => 'required|in:approve,reject'
+            'action'     => 'required|in:approve,reject',
+            'reason'     => 'required_if:action,reject|nullable|string|max:500',
         ]);
 
-        $payment = Payment::find($request->payment_id);
+        $payment = Payment::with('subscription')->find($request->payment_id);
 
         if (!$payment) {
             if ($request->ajax()) {
@@ -268,21 +247,63 @@ class WalletController extends Controller
             return redirect()->back()->with('error', 'Pembayaran tidak ditemui.');
         }
 
-        if ($request->action === 'approve') {
-            // Update payment status to SUCCESS
-            $payment->status = 'SUCCESS';
-            $payment->save();
+        DB::beginTransaction();
 
-            // Handle subscription renewal
-            if ($payment->type === 'Renew Membership' || $payment->transaction_type === 'transaction_in') {
-                $this->handleSubscriptionRenewal($payment);
+        try {
+            if ($request->action === 'approve') {
+                // Payment diluluskan
+                $payment->status = 'paid';
+                $payment->save();
+
+                if (in_array($payment->type, ['new_member', 'renew_member']) && $payment->subscription) {
+                    // Subscription memang dah wujud (dicipta semasa user buat request),
+                    // approve hanya aktifkan ia.
+                    $payment->subscription->update(['status' => 'active']);
+                } elseif ($payment->type === 'Renew Membership' || $payment->flow_type === 'transaction_in') {
+                    // Fallback untuk flow lama
+                    $this->handleSubscriptionRenewal($payment);
+                }
+
+                $message = 'Pembayaran telah diluluskan dan keahlian diaktifkan.';
+            } else {
+                // Reject: payment lama dikekalkan sebagai rekod (dengan sebab),
+                // satu payment baru dijana untuk user hantar semula resit.
+                $subscription = $payment->subscription;
+                $originalRemarks = $payment->remarks;
+
+                $payment->status = 'rejected';
+                $payment->remarks = $request->reason;
+                $payment->save();
+
+                $newPayment = Payment::create([
+                    'user_id'        => $payment->user_id,
+                    'masjid_id'      => $payment->masjid_id,
+                    'amount'         => $payment->amount,
+                    'payment_method' => $payment->payment_method,
+                    'status'         => 'pending',
+                    'type'           => $payment->type,
+                    'flow_type'      => $payment->flow_type,
+                    'remarks'        => $originalRemarks,
+                ]);
+
+                if ($subscription) {
+                    $subscription->update([
+                        'payment_id' => $newPayment->id,
+                        'status'     => 'pending_payment',
+                    ]);
+                }
+
+                $message = 'Pembayaran telah ditolak. Rekod baru dijana untuk penghantaran semula resit.';
             }
 
-            $message = 'Pembayaran telah diluluskan dan keahlian diperbaharui.';
-        } elseif ($request->action === 'reject') {
-            $payment->status = 'FAILED';
-            $payment->save();
-            $message = 'Pembayaran telah ditolak.';
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($request->ajax()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
         }
 
         if ($request->ajax()) {
@@ -519,7 +540,7 @@ class WalletController extends Controller
                 'status' => 'success',
                 'type' => 'Add Dana',
                 'remarks' => 'Tambah dana oleh AJK. ' . $user->nama,
-                'transaction_type' => 'transaction_in',
+                'flow_type' => 'transaction_in',
                 'created_at' => now(),
                 'paid_at' => now()
             ]);

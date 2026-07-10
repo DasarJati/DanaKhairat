@@ -283,6 +283,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/tuntutankhairat', [DashboardController::class, 'tuntut'])->name('user.rekodtuntut');
     Route::get('/kewangan/{user}', [UserController::class, 'transactions'])->name('user.transactions');
     Route::post('/user/{user}/transactions', [UserController::class, 'storeTransaction'])->name('user.transactions.store');
+    Route::post('/user/transactions/update/{subscriptionId}', [UserController::class, 'updateTransaction'])->name('user.transactions.update');
     Route::put('/tuntutan/approve/{id}', [ApproveTuntutanController::class, 'approve'])->name('tuntutan.approve');
     Route::put('/tuntutan/reject/{id}', [ApproveTuntutanController::class, 'reject'])->name('tuntutan.reject');
 });
