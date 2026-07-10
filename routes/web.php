@@ -360,7 +360,7 @@ Route::get('/show-log', function () {
 Route::get('/test-mailtrap', function () {
     try {
         Mail::raw('This is a test email from Dana Khairat system. Time: ' . now(), function ($message) {
-            $message->to('muhdsyazwan552@gmail.com')
+            $message->to('syazwanm710@gmail.com')
                 ->subject('Test Mailtrap Connection');
         });
 

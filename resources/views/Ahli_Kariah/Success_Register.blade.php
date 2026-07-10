@@ -8,23 +8,21 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         .success-check {
-            animation: checkmark 0.5s ease-in-out forwards;
+            animation: checkmark 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         @keyframes checkmark {
             0% {
-                transform: scale(0);
+                transform: scale(0.6);
                 opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
             }
             100% {
                 transform: scale(1);
@@ -33,9 +31,9 @@
         }
 
         .fade-up {
-            animation: fadeUp 0.6s ease-out forwards;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(16px);
         }
 
         @keyframes fadeUp {
@@ -45,100 +43,83 @@
             }
         }
 
-        .delay-1 {
-            animation-delay: 0.1s;
-        }
-
-        .delay-2 {
-            animation-delay: 0.2s;
-        }
-
-        .delay-3 {
-            animation-delay: 0.3s;
-        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-orange-50 via-white to-amber-50 min-h-screen">
+<body class="bg-[#f5f5f7] min-h-screen antialiased flex items-center justify-center">
 
     <!-- Main Container -->
-    <div class="max-w-2xl mx-auto px-4 py-12">
+    <div class="max-w-[560px] w-full mx-auto px-6 py-12">
 
         <!-- Success Card -->
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-orange-100 fade-up delay-1">
-            <!-- Success Banner -->
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-12 text-white text-center relative overflow-hidden">
-                <div class="absolute inset-0 bg-white opacity-10">
-                    <i class="fas fa-envelope absolute text-8xl -right-4 -top-4 opacity-20"></i>
-                </div>
-                <div class="relative z-10">
-                    <div class="flex justify-center mb-4">
-                        <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm success-check">
-                            <i class="fas fa-paper-plane text-5xl text-white"></i>
-                        </div>
+        <div class="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden fade-up delay-1">
+            
+            <!-- Success Top Section (Apple Crisp White Title Stack) -->
+            <div class="px-8 pt-12 pb-6 text-center">
+                <div class="flex justify-center mb-5">
+                    <!-- Clean, Non-gradient Icon Container -->
+                    <div class="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center success-check">
+                        <i class="fas fa-paper-plane text-2xl text-[#0066cc]"></i>
                     </div>
-                    <h2 class="text-3xl md:text-4xl font-extrabold mb-4">Permohonan Dihantar!</h2>
-                    <p class="text-blue-100 text-lg">Terima kasih atas permohonan anda</p>
                 </div>
+                <h2 class="text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-2">Permohonan Dihantar</h2>
+                <p class="text-[#86868b] text-[15px]">Terima kasih atas permohonan anda.</p>
             </div>
 
             <!-- Content -->
-            <div class="p-8">
-                <!-- Message -->
-                <div class="text-center mb-8 fade-up delay-2">
-                    <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-                        <i class="fas fa-clock text-blue-500 text-4xl mb-3"></i>
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Sila Semak E-mel Anda</h3>
-                        <p class="text-gray-600 mb-4">
-                            Permohonan anda akan diproses dan mengambil masa <strong class="text-blue-600">1 - 3 hari</strong> untuk pengesahan.
+            <div class="px-8 pb-10">
+                
+                <!-- Main Status Box -->
+                <div class="mb-8 fade-up delay-2">
+                    <div class="bg-[#f5f5f7] rounded-xl p-6 border border-[#e5e5ea] text-center">
+                        <p class="text-[15px] text-[#424245] leading-relaxed mb-4">
+                            Permohonan anda akan diproses dan mengambil masa untuk pengesahan.
                         </p>
-                        <div class="bg-white rounded-xl p-4 mt-4">
-                            <div class="flex items-center justify-center gap-3 text-sm">
-                                <i class="fas fa-envelope text-blue-500 text-lg"></i>
-                                <span class="text-gray-700">Sila semak e-mel anda untuk maklumat lanjut</span>
+                        
+                        <div class="bg-white rounded-lg p-4 border border-[#e5e5ea] inline-flex flex-col items-center w-full">
+                            <div class="flex items-center gap-2.5 text-sm text-[#424245]">
+                                <i class="fas fa-envelope text-[#0066cc]"></i>
+                                <span>Maklumat lanjut telah dihantar ke e-mel anda.</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-3">
-                                <i class="fas fa-info-circle"></i>
-                                Jangan lupa periksa folder Spam/Junk Mail
+                            <p class="text-xs text-[#86868b] mt-2 flex items-center gap-1.5">
+                                <i class="fas fa-info-circle text-[#86868b]"></i>
+                                Sila periksa folder Spam atau Junk sekiranya tiada di peti masuk.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Contact Information -->
-                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl mb-8 fade-up delay-3">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-phone-alt text-amber-500 text-xl"></i>
-                        <div>
-                            <p class="font-semibold text-amber-800 mb-1">Ada Sebarang Masalah?</p>
-                            <p class="text-sm text-amber-700">
-                                Sila hubungi pihak kami di:
-                            </p>
-                            <div class="mt-2 space-y-1">
-                                <p class="text-sm text-amber-700">
-                                    <i class="fas fa-phone mr-2"></i> Telefon: 03-1234 5678
-                                </p>
-                                <p class="text-sm text-amber-700">
-                                    <i class="fas fa-envelope mr-2"></i> E-mel: support@djarah.com
-                                </p>
-                                <p class="text-sm text-amber-700">
-                                    <i class="fas fa-clock mr-2"></i> Waktu Pejabat: Isnin - Jumaat (9am - 5pm)
-                                </p>
-                            </div>
+                <!-- Contact Information (Refined Clean List) -->
+                {{-- <div class="bg-white border border-[#e5e5ea] p-5 rounded-xl mb-8 fade-up delay-3">
+                    <h4 class="font-semibold text-[#1d1d1f] text-[15px] mb-3">Hubungi Pihak Pengurusan</h4>
+                    
+                    <div class="space-y-2.5 text-sm text-[#424245]">
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f2f2f7]">
+                            <span class="text-[#86868b]"><i class="fas fa-phone w-5"></i> Telefon</span>
+                            <span class="font-medium text-[#1d1d1f]">03-1234 5678</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f2f2f7]">
+                            <span class="text-[#86868b]"><i class="fas fa-envelope w-5"></i> E-mel</span>
+                            <a href="mailto:support@djariah.com" class="text-[#0066cc] hover:underline">support@djariah.com</a>
+                        </div>
+                        <div class="flex items-center justify-between py-1.5">
+                            <span class="text-[#86868b]"><i class="fas fa-clock w-5"></i> Waktu Operasi</span>
+                            <span class="text-[#1d1d1f]">Isnin - Jumaat (9:00 AM - 5:00 PM)</span>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
-                <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center fade-up delay-3">
+                <!-- Action Buttons (Flat Apple Buttons) -->
+                <div class="flex flex-col sm:flex-row gap-3 justify-center fade-up delay-3">
                     <a href="{{ route('public') }}"
-                        class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2">
-                        <i class="fas fa-home"></i>
+                        class="px-6 py-2.5 bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-[15px] font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 w-full sm:w-auto">
                         Laman Utama
                     </a>
                     <a href="{{ route('login') }}"
-                        class="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                        <i class="fas fa-sign-in-alt"></i>
+                        class="px-6 py-2.5 bg-[#0066cc] hover:bg-[#0077ed] text-white text-[15px] font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 w-full sm:w-auto">
                         Log Masuk
                     </a>
                 </div>
@@ -146,10 +127,9 @@
         </div>
 
         <!-- Footer -->
-        <div class="text-center mt-8 text-sm text-gray-500 fade-up delay-3">
+        <div class="text-center mt-8 text-xs text-[#86868b] space-y-1.5 fade-up delay-3">
             <p>© {{ date('Y') }} Djariah eKhairat. Hak Cipta Terpelihara.</p>
-            <p class="mt-1">
-                <i class="fas fa-mosque text-orange-400"></i>
+            <p class="text-[#a1a1a6] flex items-center justify-center gap-1.5">
                 Sistem Pengurusan Kariah Masjid
             </p>
         </div>

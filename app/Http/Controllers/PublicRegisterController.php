@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 
 class PublicRegisterController extends Controller
 {
@@ -302,6 +303,38 @@ class PublicRegisterController extends Controller
 
             DB::commit();
 
+            try {
+                $masjidName = $request->masjid_name ?? $request->masjid_nama ?? 'Masjid';
+
+                Log::info('Attempting to send email to: ' . $user->email);
+
+                Mail::send('emails.registration_confirmation', [
+                    'user' => $user,
+                    'masjidName' => $masjidName,
+                    'tanggunganCount' => count($tanggunganData),
+                    'totalAmount' => $jumlahBayaran
+                ], function ($message) use ($user, $masjidName) {
+                    $message->to($user->email)
+                            ->subject('Pengesahan Pendaftaran Keahlian Khairat - ' . $masjidName);
+                });
+
+                // Mail::to($user->email)->send(
+                //     new RegistrationConfirmationMail(
+                //         $user,
+                //         $masjidName,
+                //         count($tanggunganData),
+                //         $jumlahBayaran
+                //     )
+                // );
+
+                Log::info('Registration confirmation email sent to: ' . $user->email);
+            } catch (\Exception $mailError) {
+                // Log error but don't fail the registration
+                Log::error('Failed to send registration email: ' . $mailError->getMessage());
+                Log::error('Email error trace: ' . $mailError->getTraceAsString());
+                // Continue - we don't want to fail registration if email fails
+            }
+
             \Log::info('Public user registered successfully', [
                 'user_id' => $user->id,
                 'masjid_id' => $masjid->id,
@@ -310,7 +343,7 @@ class PublicRegisterController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Permohonan anda telah dihantar! Kami akan memeriksa dalam 1-3 hari.',
+                'message' => 'Permohonan anda telah dihantar! Kami akan mengambil beberapa hari untuk membuat pengesahan.',
                 'redirect_url' => route('success-daftar'),
             ]);
         } catch (\Throwable $e) {
