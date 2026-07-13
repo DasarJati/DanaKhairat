@@ -210,7 +210,7 @@ class RegisterController extends Controller
                 'alamat'         => $request->alamat ?? '',
                 'telefon_bimbit' => $request->telefon_bimbit,
                 'email'          => $request->email,
-                'password'       => Hash::make($request->password),
+                'password'       => $request->password,
                 'masjid_id'      => $request->masjid_id,
                 'amount'         => $jumlahBayaran,
                 'agree_terms'    => $request->agree_terms ? 1 : 0,

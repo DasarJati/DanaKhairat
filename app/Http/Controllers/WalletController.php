@@ -35,19 +35,44 @@ class WalletController extends Controller
 
         // Base query for payments
         $paymentsQuery = Payment::where('masjid_id', $user->masjid_id)
-            ->where(function ($query) {
-                $query->where('status', 'PAID')
-                    ->orWhere('status', 'SUCCESS');
-            })
             ->with('user');
 
-        // Get selected year from filter (default to current year)
+        // Get selected year/month from filter (default to current year/month; 'all' = no restriction)
         $selectedYear = $request->input('year', date('Y'));
         $selectedMonth = $request->input('month', date('n'));
 
-        // Apply transaction type filter
+        // Apply year filter to the transaction table
+        if ($selectedYear !== 'all') {
+            $paymentsQuery->whereYear('created_at', $selectedYear);
+        }
+
+        // Apply month filter to the transaction table
+        if ($selectedMonth !== 'all') {
+            $paymentsQuery->whereMonth('created_at', $selectedMonth);
+        }
+
+        // Apply transaction flow filter (income / expense)
         if ($request->filled('flow_type') && $request->flow_type != 'all') {
             $paymentsQuery->where('flow_type', $request->flow_type);
+        }
+
+        // Apply payment type filter (new_member / renew_member / subscription / khairat)
+        if ($request->filled('type') && $request->type != 'all') {
+            $paymentsQuery->where('type', $request->type);
+        }
+
+        // Apply status filter
+        // - no 'status' param at all  -> keep original default (only paid + waiting_verification)
+        // - status = 'all'            -> no restriction, show every status
+        // - status = a specific value -> filter to that exact status
+        $statusFilter = $request->input('status');
+        if (is_null($statusFilter)) {
+            $paymentsQuery->where(function ($query) {
+                $query->where('status', 'paid')
+                      ->orWhere('status', 'waiting_verification');
+            });
+        } elseif ($statusFilter !== 'all') {
+            $paymentsQuery->where('status', $statusFilter);
         }
 
         // Apply date filters
@@ -64,27 +89,35 @@ class WalletController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // TOTAL DANA FOR SELECTED YEAR
-        $totalDana = Payment::where('masjid_id', $user->masjid_id)
-            ->where('flow_type', 'transaction_in')
-            ->where('type', '!=', 'Add Dana')
-            ->whereYear('created_at', $selectedYear)
-            ->sum('amount');
+        // TOTAL DANA FOR SELECTED YEAR (or all-time if 'all')
+        $totalDanaQuery = Payment::where('masjid_id', $user->masjid_id)
+            ->where('flow_type', 'income')
+            ->where('type', '!=', 'Add Dana');
+        if ($selectedYear !== 'all') {
+            $totalDanaQuery->whereYear('created_at', $selectedYear);
+        }
+        $totalDana = $totalDanaQuery->sum('amount');
 
-        // TOTAL EXPENSE FOR SELECTED YEAR
-        $totalOut = Payment::where('masjid_id', $user->masjid_id)
-            ->where('flow_type', 'transaction_out')
-            ->where('type', '!=', 'Add Dana')
-            ->whereYear('created_at', $selectedYear)
-            ->sum('amount');
+        // TOTAL EXPENSE FOR SELECTED YEAR (or all-time if 'all')
+        $totalOutQuery = Payment::where('masjid_id', $user->masjid_id)
+            ->where('flow_type', 'expense')
+            ->where('type', '!=', 'Add Dana');
+        if ($selectedYear !== 'all') {
+            $totalOutQuery->whereYear('created_at', $selectedYear);
+        }
+        $totalOut = $totalOutQuery->sum('amount');
 
-        // TOTAL INCOME FOR SELECTED MONTH
-        $totalIncomeThisMonth = Payment::where('masjid_id', $user->masjid_id)
-            ->where('flow_type', 'transaction_in')
-            ->where('type', '!=', 'Add Dana')
-            ->whereYear('created_at', $selectedYear)
-            ->whereMonth('created_at', $selectedMonth)
-            ->sum('amount');
+        // TOTAL INCOME FOR SELECTED MONTH (or year/all-time if 'all')
+        $totalIncomeQuery = Payment::where('masjid_id', $user->masjid_id)
+            ->where('flow_type', 'income')
+            ->where('status', 'paid');
+        if ($selectedYear !== 'all') {
+            $totalIncomeQuery->whereYear('created_at', $selectedYear);
+        }
+        if ($selectedMonth !== 'all') {
+            $totalIncomeQuery->whereMonth('created_at', $selectedMonth);
+        }
+        $totalIncomeThisMonth = $totalIncomeQuery->sum('amount');
 
         // Get available years from payments
         $availableYears = Payment::where('masjid_id', $user->masjid_id)
@@ -111,19 +144,23 @@ class WalletController extends Controller
         $monthlyExpense = [];
 
         for ($month = 1; $month <= 12; $month++) {
-            $income = Payment::where('masjid_id', $user->masjid_id)
-                ->where('flow_type', 'transaction_in')
+            $incomeQuery = Payment::where('masjid_id', $user->masjid_id)
+                ->where('flow_type', 'income')
                 ->where('type', '!=', 'Add Dana')
-                ->whereYear('created_at', $selectedYear)
-                ->whereMonth('created_at', $month)
-                ->sum('amount');
+                ->whereMonth('created_at', $month);
+            if ($selectedYear !== 'all') {
+                $incomeQuery->whereYear('created_at', $selectedYear);
+            }
+            $income = $incomeQuery->sum('amount');
 
-            $expense = Payment::where('masjid_id', $user->masjid_id)
-                ->where('flow_type', 'transaction_out')
+            $expenseQuery = Payment::where('masjid_id', $user->masjid_id)
+                ->where('flow_type', 'expense')
                 ->where('type', '!=', 'Add Dana')
-                ->whereYear('created_at', $selectedYear)
-                ->whereMonth('created_at', $month)
-                ->sum('amount');
+                ->whereMonth('created_at', $month);
+            if ($selectedYear !== 'all') {
+                $expenseQuery->whereYear('created_at', $selectedYear);
+            }
+            $expense = $expenseQuery->sum('amount');
 
             $monthlyIncome[] = $income;
             $monthlyExpense[] = $expense;
@@ -236,6 +273,11 @@ class WalletController extends Controller
             'payment_id' => 'required|exists:payments,id',
             'action'     => 'required|in:approve,reject',
             'reason'     => 'required_if:action,reject|nullable|string|max:500',
+            'amount'     => 'required_if:action,approve|nullable|numeric|min:0.01',
+        ], [
+            'amount.required_if' => 'Sila masukkan jumlah bayaran sebelum meluluskan.',
+            'amount.numeric'     => 'Jumlah bayaran mesti nombor yang sah.',
+            'amount.min'         => 'Jumlah bayaran mesti lebih besar daripada 0.',
         ]);
 
         $payment = Payment::with('subscription')->find($request->payment_id);
@@ -251,7 +293,8 @@ class WalletController extends Controller
 
         try {
             if ($request->action === 'approve') {
-                // Payment diluluskan
+                // Kemaskini jumlah bayaran (disahkan oleh AJK) sebelum status ditukar
+                $payment->amount = $request->amount;
                 $payment->status = 'paid';
                 $payment->save();
 
@@ -259,12 +302,12 @@ class WalletController extends Controller
                     // Subscription memang dah wujud (dicipta semasa user buat request),
                     // approve hanya aktifkan ia.
                     $payment->subscription->update(['status' => 'active']);
-                } elseif ($payment->type === 'Renew Membership' || $payment->flow_type === 'transaction_in') {
+                } elseif ($payment->type === 'Renew Membership' || $payment->flow_type === 'income') {
                     // Fallback untuk flow lama
                     $this->handleSubscriptionRenewal($payment);
                 }
 
-                $message = 'Pembayaran telah diluluskan dan keahlian diaktifkan.';
+                $message = 'Pembayaran RM ' . number_format($payment->amount, 2) . ' telah diluluskan dan keahlian diaktifkan.';
             } else {
                 // Reject: payment lama dikekalkan sebagai rekod (dengan sebab),
                 // satu payment baru dijana untuk user hantar semula resit.
@@ -540,7 +583,7 @@ class WalletController extends Controller
                 'status' => 'success',
                 'type' => 'Add Dana',
                 'remarks' => 'Tambah dana oleh AJK. ' . $user->nama,
-                'flow_type' => 'transaction_in',
+                'flow_type' => 'income',
                 'created_at' => now(),
                 'paid_at' => now()
             ]);

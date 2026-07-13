@@ -464,6 +464,13 @@
                         Anda boleh menambah berbilang tanggungan (tiada had).
                     </div>
 
+                    <div class="mb-4 p-4 bg-gray-50 rounded-lg border">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="noTanggunganCheckbox" onchange="toggleNoTanggungan(this)">
+                            <span class="text-sm font-medium">Saya mendaftar seorang diri (tiada isteri/suami/anak)</span>
+                        </label>
+                    </div>
+
                     <!-- Container untuk kad tanggungan -->
                     <div id="tanggunganContainer">
                         <!-- Tanggungan pertama akan ditambah secara automatik -->
@@ -724,12 +731,13 @@
 
             // Tanggungan validation
             if (tabId === 'tanggungan') {
+                const noTanggungan = document.getElementById('noTanggunganCheckbox')?.checked;
                 const cards = document.querySelectorAll('.tanggungan-card');
-                if (cards.length === 0) {
-                    errorMessages.push('Sila tambah sekurang-kurangnya satu tanggungan.');
+                if (!noTanggungan && cards.length === 0) {
+                    errorMessages.push('Sila tambah sekurang-kurangnya satu tanggungan, atau tandakan "Tiada Tanggungan".');
                     valid = false;
                 }
-                cards.forEach((card, idx) => {
+                if (!noTanggungan) cards.forEach((card, idx) => {
                     const nama = card.querySelector(`input[name="tanggungan[${idx}][nama]"]`);
                     const ic = card.querySelector(`input[name="tanggungan[${idx}][ic]"]`);
                     const tarikh = card.querySelector(`input[name="tanggungan[${idx}][tarikh_lahir]"]`);
@@ -960,12 +968,13 @@
                 }
 
                 if (currentTab.id === 'tanggungan') {
+                    const noTanggungan = document.getElementById('noTanggunganCheckbox')?.checked;
                     const cards = document.querySelectorAll('.tanggungan-card');
-                    if (cards.length === 0) {
+                    if (!noTanggungan && cards.length === 0) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Tiada Tanggungan',
-                            text: 'Sila tambah sekurang-kurangnya satu tanggungan.',
+                            text: 'Sila tambah sekurang-kurangnya satu tanggungan, atau tandakan "Tiada Tanggungan".',
                             confirmButtonColor: '#ea580c',
                         });
                         return;
@@ -1555,7 +1564,27 @@
             window.closeZoom = closeZoom;
             window.formatIC = formatIC;
             window.formatFileSize = formatFileSize;
+            window.toggleNoTanggungan = toggleNoTanggungan;
         });
+
+        // ── Toggle "Tiada Tanggungan" ──────────────────────────────────────
+        function toggleNoTanggungan(checkbox) {
+            const container = document.getElementById('tanggunganContainer');
+            const addBtns = document.querySelectorAll('#addTanggunganBtn, #addTanggunganBottomBtn');
+
+            if (checkbox.checked) {
+                // Kosongkan semua kad supaya tiada field 'required' yang tinggal
+                container.innerHTML = '';
+                tanggunganCount = 0;
+                addBtns.forEach(btn => btn.style.display = 'none');
+                updateTanggunganCount();
+            } else {
+                addBtns.forEach(btn => btn.style.display = '');
+                if (document.querySelectorAll('.tanggungan-card').length === 0) {
+                    addTanggungan();
+                }
+            }
+        }
 
         // ── AJAX Submit with SweetAlert ────────────────────────────────────
         const publicRegisterForm = document.getElementById('publicRegisterForm');
@@ -1573,26 +1602,29 @@
                 combineAddressForSubmit();
 
                 // 3. Collect tanggungan data
-                const tanggunganData = getTanggunganData();
-                if (tanggunganData.length === 0) {
+                const noTanggungan = document.getElementById('noTanggunganCheckbox')?.checked;
+                const tanggunganData = noTanggungan ? [] : getTanggunganData();
+                if (!noTanggungan && tanggunganData.length === 0) {
                     Swal.fire({
                         icon: 'warning',
                         title: 'Tiada Tanggungan',
-                        text: 'Sila tambah sekurang-kurangnya satu tanggungan.',
+                        text: 'Sila tambah sekurang-kurangnya satu tanggungan, atau tandakan "Tiada Tanggungan".',
                         confirmButtonColor: '#ea580c'
                     });
                     return;
                 }
 
                 let hasError = false;
-                tanggunganData.forEach((t) => {
-                    if (!t.nama || !t.ic || !t.tarikh_lahir || !t.hubungan) {
-                        hasError = true;
-                    }
-                    if (t.ic && !/^\d{6}-\d{2}-\d{4}$/.test(t.ic)) {
-                        hasError = true;
-                    }
-                });
+                if (!noTanggungan) {
+                    tanggunganData.forEach((t) => {
+                        if (!t.nama || !t.ic || !t.tarikh_lahir || !t.hubungan) {
+                            hasError = true;
+                        }
+                        if (t.ic && !/^\d{6}-\d{2}-\d{4}$/.test(t.ic)) {
+                            hasError = true;
+                        }
+                    });
+                }
 
                 if (hasError) {
                     Swal.fire({
@@ -1607,7 +1639,7 @@
                 // 4. Store tanggungan data as JSON
                 const tanggunganHidden = document.getElementById('tanggungan_data');
                 if (tanggunganHidden) {
-                    tanggunganHidden.value = JSON.stringify(tanggunganData);
+                    tanggunganHidden.value = noTanggungan ? '[]' : JSON.stringify(tanggunganData);
                 }
 
                 // 5. Build FormData

@@ -35,6 +35,8 @@ use App\Http\Controllers\ChangeKetuaController;
 use App\Http\Controllers\BulkRegisterController;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 
 Route::get('/pakej', function () {
@@ -367,5 +369,31 @@ Route::get('/test-mailtrap', function () {
         return "✅ Email sent successfully! Check your Mailtrap inbox.";
     } catch (\Exception $e) {
         return "❌ Error: " . $e->getMessage();
+    }
+});
+
+Route::get('/test-approval-email', function () {
+    try {
+        $testEmail = 'syazwanm710@gmail.com'; // Change to your email
+        
+        $user = (object) [
+            'nama' => 'Test User',
+            'email' => $testEmail,
+        ];
+        
+        $plainPassword = 'Test123456';
+        
+        Mail::send('emails.kariah_approval', [
+            'user' => $user,
+            'password' => $plainPassword,
+        ], function ($message) use ($testEmail) {
+            $message->to($testEmail)
+                    ->subject('TEST: Akaun Ahli Kariah Berjaya Dicipta');
+        });
+        
+        return "Test email sent to: " . $testEmail . " with password: " . $plainPassword;
+        
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage();
     }
 });

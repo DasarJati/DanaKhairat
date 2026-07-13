@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class UserApprovalController extends Controller
 {
@@ -112,6 +113,112 @@ class UserApprovalController extends Controller
         return view('Ahli_Kariah.Approve_Kariah', compact('user'));
     }
 
+    // public function approveKariah($id, MembershipService $membershipService)
+    // {
+    //     $userRegister = UserRegister::findOrFail($id);
+    //     $tanggunganRegisters = $userRegister->tanggungan;
+
+    //     if ($userRegister->approval_status === 'APPROVED') {
+    //         return back()->with('warning', 'User already approved');
+    //     }
+
+    //     // CHECK IF EMAIL OR IC ALREADY EXISTS WITH ROLE = 2 (AHLI)
+    //     $existingUser = User::where(function ($query) use ($userRegister) {
+    //         $query->where('ic_number', $userRegister->ic_number)
+    //             ->orWhere('email', $userRegister->email);
+    //     })
+    //         ->where('role', 2) // Only check for Ahli role
+    //         ->first();
+
+    //     if ($existingUser) {
+    //         $field = $existingUser->ic_number == $userRegister->ic_number ? 'No. IC' : 'Email';
+    //         return back()->with('error', "$field sudah wujud dalam sistem sebagai AHLI. Sila gunakan $field lain.");
+    //     }
+
+    //     $userRegister->update([
+    //         'approval_status' => 'APPROVED',
+    //     ]);
+
+    //     $user = User::create([
+    //         'nama' => $userRegister->nama,
+    //         'masjid_id' => $userRegister->masjid_id,
+    //         'ic_number' => $userRegister->ic_number,
+    //         'email' => $userRegister->email,
+    //         'password' => $userRegister->password,
+    //         'role' => '2',
+    //         'status' => 'active',
+    //         'tel_number' => $userRegister->telefon_bimbit,
+    //     ]);
+
+    //     // GENERATE FAMILY ID
+    //     // Format: FAM-{masjid_id}-{year}{month}{day}-{random_4_digit}
+    //     // Example: FAM-1-20250115-7842
+    //     $familyId = $this->generateFamilyId($userRegister->masjid_id);
+
+    //     $ahli = AhliKariah::create([
+    //         'family_id' => $familyId, // Set the generated family_id
+    //         'user_id' => $user->id,
+    //         'masjid_id' => $userRegister->masjid_id,
+    //         'nama' => $userRegister->nama,
+    //         'email' => $userRegister->email,
+    //         'ic' => $userRegister->ic_number,
+    //         'notel' => $userRegister->telefon_bimbit,
+    //         'jantina' => $userRegister->jantina,
+    //         'alamat' => $userRegister->alamat,
+    //         'status' => 'active',
+    //         'is_ketua' => 1 // Ketua keluarga
+    //     ]);
+
+    //     // Create Tanggungan records for each dependent with the SAME family_id
+    //     foreach ($tanggunganRegisters as $tanggunganRegister) {
+    //         // Check if tanggungan IC already exists in the system
+    //         $existingTanggungan = AhliKariah::where('ic', $tanggunganRegister->ic_number)->first();
+    //         if ($existingTanggungan) {
+    //             // Optionally skip or handle duplicate
+    //             continue; // Skip this tanggungan if already exists
+    //         }
+
+    //         Tanggungan::create([
+    //             'ahli_id' => $ahli->id,
+    //             'family_id' => $familyId,
+    //             'nama' => $tanggunganRegister->nama,
+    //             'ic_number' => $tanggunganRegister->ic_number,
+    //             'hubungan' => $tanggunganRegister->hubungan,
+    //             'document_path' => $tanggunganRegister->document_path,
+    //             'oku' => $tanggunganRegister->oku,
+    //             'status' => 'active'
+    //         ]);
+    //     }
+
+    //     $payment = Payment::create([
+    //         'user_id' => $user->id,
+    //         'masjid_id' => $userRegister->masjid_id,
+    //         'amount' => $userRegister->amount,
+    //         'payment_method' => 'Manual',
+    //         'status' => 'pending',
+    //         'receipt_path' => $userRegister->receipt_path,
+    //         'remarks' => 'Register New Member',
+    //         'type' => 'new_member',
+    //         'flow_type' =>  'income',
+    //         'paid_at' => null,
+
+    //     ]);
+
+    //     SubscriptionsKariah::create([
+    //         'user_id' => $user->id,
+    //         'masjid_id' => $userRegister->masjid_id,
+    //         'start_date' => $membershipService->getStartDate(),
+    //         'end_date'   => $membershipService->getEndDate(),
+    //         'status' => 'pending_payment',
+    //         'price' => $userRegister->amount,
+    //         'payment_id' => $payment->id,
+    //         'payment_type' => 'manual',
+    //         'transaction_for' => 'new',
+    //     ]);
+
+    //     return back()->with('success', 'User berjaya diluluskan dengan family ID: ' . $familyId);
+    // }
+
     public function approveKariah($id, MembershipService $membershipService)
     {
         $userRegister = UserRegister::findOrFail($id);
@@ -143,7 +250,7 @@ class UserApprovalController extends Controller
             'masjid_id' => $userRegister->masjid_id,
             'ic_number' => $userRegister->ic_number,
             'email' => $userRegister->email,
-            'password' => $userRegister->password,
+            'password' => Hash::make($userRegister->password),
             'role' => '2',
             'status' => 'active',
             'tel_number' => $userRegister->telefon_bimbit,
@@ -169,6 +276,7 @@ class UserApprovalController extends Controller
         ]);
 
         // Create Tanggungan records for each dependent with the SAME family_id
+        $tanggunganCreated = [];
         foreach ($tanggunganRegisters as $tanggunganRegister) {
             // Check if tanggungan IC already exists in the system
             $existingTanggungan = AhliKariah::where('ic', $tanggunganRegister->ic_number)->first();
@@ -177,7 +285,7 @@ class UserApprovalController extends Controller
                 continue; // Skip this tanggungan if already exists
             }
 
-            Tanggungan::create([
+            $tanggungan = Tanggungan::create([
                 'ahli_id' => $ahli->id,
                 'family_id' => $familyId,
                 'nama' => $tanggunganRegister->nama,
@@ -187,6 +295,7 @@ class UserApprovalController extends Controller
                 'oku' => $tanggunganRegister->oku,
                 'status' => 'active'
             ]);
+            $tanggunganCreated[] = $tanggungan;
         }
 
         $payment = Payment::create([
@@ -198,12 +307,11 @@ class UserApprovalController extends Controller
             'receipt_path' => $userRegister->receipt_path,
             'remarks' => 'Register New Member',
             'type' => 'new_member',
-            'flow_type' =>  'income',
+            'flow_type' => 'income',
             'paid_at' => null,
-            
         ]);
 
-        SubscriptionsKariah::create([
+        $subscription = SubscriptionsKariah::create([
             'user_id' => $user->id,
             'masjid_id' => $userRegister->masjid_id,
             'start_date' => $membershipService->getStartDate(),
@@ -214,6 +322,39 @@ class UserApprovalController extends Controller
             'payment_type' => 'manual',
             'transaction_for' => 'new',
         ]);
+
+        $plainPassword = $userRegister->password;
+
+        // SEND EMAIL NOTIFICATION
+        try {
+            $masjidName = $userRegister->masjid->nama ?? $userRegister->masjid->name ?? 'Masjid';
+            $totalAmount = $userRegister->amount ?? 0;
+            $tanggunganCount = count($tanggunganCreated);
+
+            Log::info('Attempting to send approval email to: ' . $user->email);
+
+            Mail::send('emails.kariah_approval', [
+                'user' => $user,
+                'userRegister' => $userRegister,
+                'password' => $plainPassword,
+                'masjidName' => $masjidName,
+                'familyId' => $familyId,
+                'tanggunganCount' => $tanggunganCount,
+                'totalAmount' => $totalAmount,
+                'payment' => $payment,
+                'subscription' => $subscription,
+            ], function ($message) use ($user, $masjidName) {
+                $message->to($user->email)
+                    ->subject('Kelulusan Pendaftaran Keahlian Kariah - ' . $masjidName);
+            });
+
+            Log::info('Approval email sent successfully to: ' . $user->email);
+        } catch (\Exception $mailError) {
+            // Log error but don't fail the approval process
+            Log::error('Failed to send approval email: ' . $mailError->getMessage());
+            Log::error('Email error trace: ' . $mailError->getTraceAsString());
+            // Continue - we don't want to fail approval if email fails
+        }
 
         return back()->with('success', 'User berjaya diluluskan dengan family ID: ' . $familyId);
     }
@@ -243,14 +384,40 @@ class UserApprovalController extends Controller
 
     public function rejectKariah(Request $request, $id)
     {
-        $user = UserRegister::findOrFail($id);
+        $userRegister = UserRegister::findOrFail($id);
+        
 
-        if ($user->approval_status === 'REJECTED') {
+        if ($userRegister->approval_status === 'REJECTED') {
             return back()->with('warning', 'User already rejected');
         }
 
-        $user->approval_status = 'REJECTED';
-        $user->save();
+        $userRegister->update([
+            'approval_status' => 'REJECTED',
+        ]);
+
+        // SEND EMAIL NOTIFICATION
+        try {
+            $masjidName = $userRegister->masjid->nama ?? $userRegister->masjid->name ?? 'Masjid';
+
+            // Get rejection reason from request if provided
+            $rejectionReason = $request->input('reason', 'Permohonan anda tidak memenuhi syarat kelayakan.');
+
+            Log::info('Attempting to send rejection email to: ' . $userRegister->email);
+
+            Mail::send('emails.kariah_rejection', [
+                'user' => $userRegister,
+                'masjidName' => $masjidName,
+                'rejectionReason' => $rejectionReason,
+            ], function ($message) use ($userRegister, $masjidName) {
+                $message->to($userRegister->email)
+                    ->subject('Permohonan Keahlian Khairat Tidak Diluluskan');
+            });
+
+            Log::info('Rejection email sent successfully to: ' . $userRegister->email);
+        } catch (\Exception $mailError) {
+            Log::error('Failed to send rejection email: ' . $mailError->getMessage());
+            Log::error('Email error trace: ' . $mailError->getTraceAsString());
+        }
 
         return back()->with('success', 'User berjaya ditolak');
     }
@@ -405,6 +572,4 @@ class UserApprovalController extends Controller
 
         return back()->with('success', 'Permohonan telah ditolak.');
     }
-
-    
 }

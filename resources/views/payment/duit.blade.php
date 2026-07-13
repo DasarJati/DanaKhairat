@@ -39,6 +39,7 @@
                         <select name="year"
                             class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
                             onchange="this.form.submit()">
+                            <option value="all" {{ $selectedYear == 'all' ? 'selected' : '' }}>Semua Tahun</option>
                             @foreach ($availableYears as $year)
                                 <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>
                                     Tahun {{ $year }}
@@ -50,6 +51,7 @@
                         <select name="month"
                             class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
                             onchange="this.form.submit()">
+                            <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>Semua Bulan</option>
                             <option value="1" {{ $selectedMonth == 1 ? 'selected' : '' }}>Januari</option>
                             <option value="2" {{ $selectedMonth == 2 ? 'selected' : '' }}>Februari</option>
                             <option value="3" {{ $selectedMonth == 3 ? 'selected' : '' }}>Mac</option>
@@ -68,6 +70,12 @@
                         @if (request('flow_type') && request('flow_type') != 'all')
                             <input type="hidden" name="flow_type" value="{{ request('flow_type') }}">
                         @endif
+                        @if (request('status') && request('status') != 'all')
+                            <input type="hidden" name="status" value="{{ request('status') }}">
+                        @endif
+                        @if (request('type') && request('type') != 'all')
+                            <input type="hidden" name="type" value="{{ request('type') }}">
+                        @endif
                         @if (request('start_date'))
                             <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                         @endif
@@ -76,7 +84,7 @@
                         @endif
 
                         <!-- Reset Filters Button -->
-                        @if (request('year') || request('month') || request('flow_type') || request('start_date') || request('end_date'))
+                        @if (request('year') || request('month') || request('flow_type') || request('status') || request('type') || request('start_date') || request('end_date'))
                             <a href="{{ route('finance') }}"
                                 class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">
                                 <i class="fas fa-times mr-2"></i> Reset Semua
@@ -90,17 +98,29 @@
                     <span class="text-xs font-semibold text-slate-500">Filter Aktif:</span>
                     <span
                         class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                        Tahun: {{ $selectedYear }}
+                        Tahun: {{ $selectedYear == 'all' ? 'Semua' : $selectedYear }}
                     </span>
                     <span
                         class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
                         Bulan:
-                        {{ ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sept', 'Okt', 'Nov', 'Dis'][$selectedMonth - 1] }}
+                        {{ $selectedMonth == 'all' ? 'Semua' : ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sept', 'Okt', 'Nov', 'Dis'][$selectedMonth - 1] }}
                     </span>
-                    {{-- @if (request('flow_type') && request('flow_type') != 'all')
+                    @if (request('flow_type') && request('flow_type') != 'all')
                         <span
                             class="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                            Jenis: {{ request('flow_type') == 'transaction_in' ? 'Masuk' : 'Keluar' }}
+                            Jenis: {{ request('flow_type') == 'income' ? 'Masuk' : 'Keluar' }}
+                        </span>
+                    @endif
+                    @if (request('status') && request('status') != 'all')
+                        <span
+                            class="px-3 py-1 bg-sky-50 text-sky-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                            Status: {{ ucfirst(str_replace('_', ' ', request('status'))) }}
+                        </span>
+                    @endif
+                    @if (request('type') && request('type') != 'all')
+                        <span
+                            class="px-3 py-1 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                            Kategori: {{ ucfirst(str_replace('_', ' ', request('type'))) }}
                         </span>
                     @endif
                     @if (request('start_date'))
@@ -114,7 +134,7 @@
                             class="px-3 py-1 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
                             Hingga: {{ \Carbon\Carbon::parse(request('end_date'))->format('d/m/Y') }}
                         </span>
-                    @endif --}}
+                    @endif
                 </div>
             </div>
 
@@ -128,7 +148,7 @@
                             <div class="flex items-center justify-between mb-8">
                                 <span
                                     class="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-indigo-300">
-                                    Tahun {{ $selectedYear }}
+                                    Tahun {{ $selectedYear == 'all' ? 'Semua' : $selectedYear }}
                                 </span>
                                 <div
                                     class="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
@@ -176,8 +196,8 @@
                             </div>
                             <span
                                 class="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider">
-                                {{ ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sept', 'Okt', 'Nov', 'Dis'][$selectedMonth - 1] }}
-                                {{ $selectedYear }}
+                                {{ $selectedMonth == 'all' ? 'Semua Bulan' : ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sept', 'Okt', 'Nov', 'Dis'][$selectedMonth - 1] }}
+                                {{ $selectedYear == 'all' ? '(Semua Tahun)' : $selectedYear }}
                             </span>
                         </div>
                         <div>
@@ -200,7 +220,7 @@
                             </div>
                             <span
                                 class="text-[10px] font-black text-rose-500 bg-rose-50 px-2 py-1 rounded-md uppercase tracking-wider">
-                                Tahun {{ $selectedYear }}
+                                Tahun {{ $selectedYear == 'all' ? 'Semua' : $selectedYear }}
                             </span>
                         </div>
                         <div>
@@ -224,18 +244,51 @@
                         <!-- Auto-submit Transaction Filter Form -->
                         <form method="GET" action="{{ route('finance') }}" id="transactionFilterForm"
                             class="flex flex-col sm:flex-row gap-3">
-                            <!-- Transaction Type Filter - Auto submit on change -->
-                            <select name="flow_type"
+                            <!-- Payment Type (category) Filter - Auto submit on change -->
+                            <select name="type" id="typeFilterSelect"
+                                class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+                                onchange="handleTypeFilterChange(this)">
+                                <option value="all" {{ request('type', 'all') == 'all' ? 'selected' : '' }}>Semua
+                                    Kategori</option>
+                                <option value="new_member" {{ request('type') == 'new_member' ? 'selected' : '' }}>
+                                    Ahli Baru</option>
+                                <option value="renew_member"
+                                    {{ request('type') == 'renew_member' ? 'selected' : '' }}>Renew Ahli</option>
+                                <option value="subscription"
+                                    {{ request('type') == 'subscription' ? 'selected' : '' }}>Langganan</option>
+                                <option value="khairat" {{ request('type') == 'khairat' ? 'selected' : '' }}>Khairat
+                                    (Pengurusan Kematian)</option>
+                            </select>
+
+                            <!-- Transaction Flow Filter - Auto submit on change -->
+                            <select name="flow_type" id="flowTypeFilterSelect"
                                 class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
                                 onchange="this.form.submit()">
                                 <option value="all" {{ request('flow_type') == 'all' ? 'selected' : '' }}>Semua
                                     Transaksi</option>
-                                <option value="transaction_in"
-                                    {{ request('flow_type') == 'transaction_in' ? 'selected' : '' }}>Transaksi Masuk
+                                <option value="income"
+                                    {{ request('flow_type') == 'income' ? 'selected' : '' }}>Transaksi Masuk
                                 </option>
-                                <option value="transaction_out"
-                                    {{ request('flow_type') == 'transaction_out' ? 'selected' : '' }}>Transaksi
+                                <option value="expense"
+                                    {{ request('flow_type') == 'expense' ? 'selected' : '' }}>Transaksi
                                     Keluar</option>
+                            </select>
+
+                            <!-- Status Filter - Auto submit on change -->
+                            <select name="status"
+                                class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
+                                onchange="this.form.submit()">
+                                <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>Semua Status
+                                </option>
+                                <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Berjaya
+                                </option>
+                                <option value="waiting_verification"
+                                    {{ request('status') == 'waiting_verification' ? 'selected' : '' }}>Menunggu
+                                    Pengesahan</option>
+                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>
+                                    Pending</option>
+                                <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>
+                                    Ditolak</option>
                             </select>
 
                             <!-- Start Date - Auto submit on change -->
@@ -261,7 +314,7 @@
                             @endif
 
                             <!-- Reset Button (only shows when filters are active) -->
-                            @if (request()->has('flow_type') || request()->has('start_date') || request()->has('end_date'))
+                            @if (request()->has('flow_type') || request()->has('status') || request()->has('type') || request()->has('start_date') || request()->has('end_date'))
                                 <a href="{{ route('finance', ['year' => request('year'), 'month' => request('month')]) }}"
                                     class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors text-center">
                                     <i class="fas fa-times mr-2"></i> Reset
@@ -273,6 +326,8 @@
                     <!-- Active Transaction Filters Display -->
                     @if (
                         (request()->filled('flow_type') && request('flow_type') != 'all') ||
+                            (request()->filled('status') && request('status') != 'all') ||
+                            (request()->filled('type') && request('type') != 'all') ||
                             request()->filled('start_date') ||
                             request()->filled('end_date'))
                         <div class="mt-4 flex flex-wrap items-center gap-2">
@@ -280,7 +335,19 @@
                             @if (request('flow_type') && request('flow_type') != 'all')
                                 <span
                                     class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                    {{ request('flow_type') == 'transaction_in' ? 'Transaksi Masuk' : 'Transaksi Keluar' }}
+                                    {{ request('flow_type') == 'income' ? 'Transaksi Masuk' : 'Transaksi Keluar' }}
+                                </span>
+                            @endif
+                            @if (request('status') && request('status') != 'all')
+                                <span
+                                    class="px-3 py-1 bg-sky-50 text-sky-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                    Status: {{ ucfirst(str_replace('_', ' ', request('status'))) }}
+                                </span>
+                            @endif
+                            @if (request('type') && request('type') != 'all')
+                                <span
+                                    class="px-3 py-1 bg-fuchsia-50 text-fuchsia-700 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                    Kategori: {{ ucfirst(str_replace('_', ' ', request('type'))) }}
                                 </span>
                             @endif
                             @if (request('start_date'))
@@ -341,12 +408,12 @@
                                     <td class="px-8 py-5">
                                         @php
                                             $colors = [
-                                                'transaction_in' => 'text-emerald-600',
-                                                'transaction_out' => 'text-rose-600',
+                                                'income' => 'text-emerald-600',
+                                                'expense' => 'text-rose-600',
                                             ];
                                             $symbols = [
-                                                'transaction_in' => '+',
-                                                'transaction_out' => '−',
+                                                'income' => '+',
+                                                'expense' => '−',
                                             ];
                                             $type = $transaction->flow_type;
                                             $color = $colors[$type] ?? 'text-slate-400';
@@ -416,7 +483,7 @@
                                             </svg>
                                             <p class="mt-4 text-slate-400 text-xs font-black uppercase tracking-widest">
                                                 Tiada rekod transaksi</p>
-                                            @if (request()->has('flow_type') || request()->has('start_date') || request()->has('end_date'))
+                                            @if (request()->has('flow_type') || request()->has('status') || request()->has('type') || request()->has('start_date') || request()->has('end_date'))
                                                 <a href="{{ route('finance', ['year' => request('year'), 'month' => request('month')]) }}"
                                                     class="mt-4 text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                                                     <i class="fas fa-undo mr-1"></i> Reset penapis
@@ -445,6 +512,20 @@
             </div>
         </main>
     </div>
+
+    <script>
+        // Khairat (pengurusan kematian) is always an expense — auto-align the
+        // flow_type filter so the two don't end up contradicting each other.
+        function handleTypeFilterChange(select) {
+            if (select.value === 'khairat') {
+                const flowTypeSelect = document.getElementById('flowTypeFilterSelect');
+                if (flowTypeSelect) {
+                    flowTypeSelect.value = 'expense';
+                }
+            }
+            select.form.submit();
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 

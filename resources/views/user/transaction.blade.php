@@ -609,7 +609,7 @@
                                 @forelse($pembayaran as $payment)
                                     @php
                                         $isIncome =
-                                            $payment->flow_type == 'transaction_in' ||
+                                            $payment->flow_type == 'income' ||
                                             $payment->flow_type == 'income';
                                         $amountClass = $isIncome ? 'text-emerald-600' : 'text-rose-600';
                                         $amountPrefix = $isIncome ? '+' : '-';
@@ -790,7 +790,7 @@
                 <form action="{{ route('user.transactions.store', $user->id) }}" method="POST"
                     enctype="multipart/form-data" class="p-6 space-y-4 overflow-y-auto">
                     @csrf
-                    <input type="hidden" name="flow_type" value="transaction_in">
+                    <input type="hidden" name="flow_type" value="income">
                     <input type="hidden" name="type" value="Renew Membership">
                     <input type="hidden" name="is_renewal" value="1">
 
@@ -877,7 +877,7 @@
                 <form id="updatePaymentForm" action="" method="POST" enctype="multipart/form-data"
                     class="p-6 space-y-4 overflow-y-auto">
                     @csrf
-                    <input type="hidden" name="flow_type" value="transaction_in">
+                    <input type="hidden" name="flow_type" value="income">
                     <input type="hidden" name="is_update" value="1">
 
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2">

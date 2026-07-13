@@ -127,12 +127,12 @@
         </div>
 
         <!-- Footer -->
-        <div class="text-center mt-8 text-xs text-[#86868b] space-y-1.5 fade-up delay-3">
+        {{-- <div class="text-center mt-8 text-xs text-[#86868b] space-y-1.5 fade-up delay-3">
             <p>© {{ date('Y') }} Djariah eKhairat. Hak Cipta Terpelihara.</p>
             <p class="text-[#a1a1a6] flex items-center justify-center gap-1.5">
                 Sistem Pengurusan Kariah Masjid
             </p>
-        </div>
+        </div> --}}
     </div>
 
 </body>

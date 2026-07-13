@@ -32,17 +32,8 @@ class TanggunganController extends Controller
         if (!empty($ahliID->family_id)) {
             $familyId = $ahliID->family_id;
         } else {
-            // Get latest FAMxxxx and increment
-            $latest = AhliKariah::whereNotNull('family_id')
-                ->orderByDesc('family_id')
-                ->value('family_id');
-
-            if ($latest) {
-                $number   = (int) substr($latest, 3); // strip 'FAM', cast to int
-                $familyId = 'FAM' . str_pad($number + 1, 4, '0', STR_PAD_LEFT);
-            } else {
-                $familyId = 'FAM0001';
-            }
+            // Generate new family ID using the same method as approval
+            $familyId = $this->generateFamilyId($ahliID->masjid_id);
 
             // Save it back to the ahli record
             $ahliID->family_id = $familyId;
@@ -50,7 +41,6 @@ class TanggunganController extends Controller
         }
 
         for ($i = 0; $i < $total; $i++) {
-
             $umur = Carbon::parse($request->tarikh_lahir[$i])->age;
 
             if (
@@ -66,7 +56,7 @@ class TanggunganController extends Controller
             }
 
             Tanggungan::create([
-                'family_id' => $familyId,           // <-- attach family_id
+                'family_id' => $familyId,
                 'ahli_id'   => $ahliID->id,
                 'nama'      => $request->nama[$i],
                 'ic_number' => $request->ic_number[$i],
@@ -79,4 +69,41 @@ class TanggunganController extends Controller
             ->route('ahlikeluarga.index')
             ->with('success', 'Semua tanggungan berjaya disimpan');
     }
+
+    private function generateFamilyId($masjidId, $useOldFormat = false)
+{
+    if ($useOldFormat) {
+        // Old format: FAM0001, FAM0002, etc.
+        $latest = AhliKariah::whereNotNull('family_id')
+            ->where('family_id', 'NOT LIKE', 'FAM-%') // Exclude new format
+            ->orderByDesc('family_id')
+            ->value('family_id');
+
+        if ($latest) {
+            $number = (int) substr($latest, 3);
+            $familyId = 'FAM' . str_pad($number + 1, 4, '0', STR_PAD_LEFT);
+        } else {
+            $familyId = 'FAM0001';
+        }
+        
+        return $familyId;
+    }
+
+    // New format: FAM-{masjid_id}-{year}{month}{day}-{random_4_digit}
+    $date = now()->format('Ymd');
+    $random = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+
+    // Check for uniqueness
+    $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+
+    // Ensure uniqueness (loop until we find a unique one)
+    $attempts = 0;
+    while (AhliKariah::where('family_id', $familyId)->exists() && $attempts < 10) {
+        $random = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+        $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+        $attempts++;
+    }
+
+    return $familyId;
+}
 }

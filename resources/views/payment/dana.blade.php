@@ -25,6 +25,13 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl flex items-center shadow-sm">
+                    <i class="fas fa-exclamation-circle mr-3 text-rose-500"></i>
+                    <span class="font-bold text-sm">{{ $errors->first() }}</span>
+                </div>
+            @endif
+
             <!-- FILTER SECTION -->
             <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden mb-8">
                 <div class="px-8 py-6">
@@ -153,7 +160,7 @@
                                     <span class="text-sm font-bold text-slate-500">{{ $pendingPayments->firstItem() + $index }}</span>
                                 
                                 <td class="px-8 py-5">
-                                    <p class="text-sm font-bold text-slate-900">{{ $payment->user->name ?? $payment->name ?? 'Nama tidak dijumpai' }}</p>
+                                    <p class="text-sm font-bold text-slate-900">{{  $payment->user->nama ?? 'Nama tidak dijumpai' }}</p>
                                     <p class="text-xs text-slate-400 mt-0.5">{{ $payment->user->ic_number ?? '-' }}</p>
                                 
     
@@ -186,11 +193,12 @@
     
                                 <td class="px-8 py-5">
                                     <div class="flex gap-2">
-                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline" onsubmit="return confirm('Terima pembayaran ini? Keahlian akan diaktifkan secara automatik.')">
+                                        <form method="POST" action="{{ route('finance.status.update') }}" class="inline approve-form">
                                             @csrf
                                             <input type="hidden" name="payment_id" value="{{ $payment->id }}">
                                             <input type="hidden" name="action" value="approve">
-                                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1">
+                                            <input type="hidden" name="amount" class="approve-amount-input" value="{{ $payment->amount }}">
+                                            <button type="button" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1 btn-approve" data-default-amount="{{ $payment->amount }}">
                                                 <i class="fas fa-check"></i> Sahkan
                                             </button>
                                         </form>
@@ -256,22 +264,87 @@
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        document.querySelectorAll('.btn-approve').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const form = btn.closest('form');
+                const defaultAmount = parseFloat(btn.getAttribute('data-default-amount')) || 0;
+
+                Swal.fire({
+                    title: 'Sahkan Jumlah Bayaran',
+                    html: `
+                        <p class="text-sm text-slate-500 mb-3 text-left">Sahkan jumlah bayaran yang diterima (RM):</p>
+                        <input type="number" id="swal-amount-input" step="0.01" min="0.01"
+                            class="swal2-input" value="${defaultAmount.toFixed(2)}" placeholder="0.00">
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sahkan & Luluskan',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#6b7280',
+                    preConfirm: () => {
+                        const raw = document.getElementById('swal-amount-input').value;
+                        const amount = parseFloat(String(raw).replace(',', '.'));
+                        if (isNaN(amount) || amount <= 0) {
+                            Swal.showValidationMessage('Sila masukkan jumlah yang sah (nombor lebih besar daripada 0).');
+                            return false;
+                        }
+                        return amount;
+                    }
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    const amount = result.value;
+
+                    Swal.fire({
+                        title: 'Terima Pembayaran Ini?',
+                        text: 'Jumlah RM ' + amount.toFixed(2) + ' akan direkod dan keahlian akan diaktifkan secara automatik.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, Luluskan',
+                        cancelButtonText: 'Batal',
+                        confirmButtonColor: '#059669',
+                        cancelButtonColor: '#6b7280',
+                    }).then((confirmResult) => {
+                        if (!confirmResult.isConfirmed) return;
+                        form.querySelector('.approve-amount-input').value = amount.toFixed(2);
+                        form.submit();
+                    });
+                });
+            });
+        });
+
         document.querySelectorAll('.btn-reject').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 const form = btn.closest('form');
-                const reason = prompt('Sila nyatakan sebab penolakan pembayaran ini:');
 
-                if (reason === null) {
-                    return; // user cancel
-                }
-                if (reason.trim() === '') {
-                    alert('Sebab penolakan diperlukan.');
-                    return;
-                }
-
-                form.querySelector('.reject-reason-input').value = reason.trim();
-                form.submit();
+                Swal.fire({
+                    title: 'Tolak Pembayaran',
+                    html: `
+                        <p class="text-sm text-slate-500 mb-3 text-left">Sila nyatakan sebab/catatan penolakan pembayaran ini:</p>
+                        <textarea id="swal-reject-reason" rows="3" maxlength="500"
+                            class="swal2-textarea" placeholder="Contoh: Resit tidak jelas / jumlah tidak tepat..."></textarea>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Tolak Pembayaran',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#e11d48',
+                    cancelButtonColor: '#6b7280',
+                    preConfirm: () => {
+                        const reason = document.getElementById('swal-reject-reason').value.trim();
+                        if (reason === '') {
+                            Swal.showValidationMessage('Sebab/catatan penolakan diperlukan.');
+                            return false;
+                        }
+                        return reason;
+                    }
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    form.querySelector('.reject-reason-input').value = result.value;
+                    form.submit();
+                });
             });
         });
     </script>

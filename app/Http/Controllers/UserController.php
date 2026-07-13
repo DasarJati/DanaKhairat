@@ -709,7 +709,7 @@ class UserController extends Controller
                 'payment_method'   => $request->payment_method,
                 'status'           => 'PENDING',
                 'type'             => $request->type,             // Hidden input: Renew Membership
-                'flow_type' => $request->flow_type, // Hidden input: transaction_in
+                'flow_type' => $request->flow_type, // Hidden input: income
                 'paid_at'          => $request->paid_at,
                 'receipt_path'       => $resitPath,
                 'remarks'          => $request->remarks,

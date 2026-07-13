@@ -255,7 +255,7 @@ class PublicRegisterController extends Controller
                 'alamat'         => $request->alamat ?? '',
                 'telefon_bimbit' => $request->telefon_bimbit ?? '',
                 'email'          => $request->email,
-                'password'       => bcrypt($request->password),
+                'password'       => $request->password,
                 'masjid_id'      => $masjid->id,
                 'amount'         => $jumlahBayaran,
                 'agree_terms'    => $request->has('agree_terms') ? 1 : 0,

@@ -15,7 +15,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                @if ($user->approval_status != 'APPROVED')
+                @if ($user->approval_status != 'APPROVED' && $user->approval_status != 'REJECTED')
                     <form action="{{ route('approve.kariah', $user->id) }}" method="POST"> @csrf
                         <button
                             class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-200 transition-all">
