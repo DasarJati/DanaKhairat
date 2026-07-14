@@ -62,6 +62,7 @@ Route::get('/ajk/register', [AjkRegisterController::class, 'showForm'])->name('a
 Route::post('/register/complete', [AjkRegisterController::class, 'completeRegistration'])->name('ajk.complete');
 
 Route::get('/user/register', [RegisterController::class, 'showform'])->name('ahliregister');
+Route::get('/policy/{masjidId}', [RegisterController::class, 'showPolicy'])->name('policy.show');
 Route::post('/userregister', [RegisterController::class, 'store'])->name('user.register');
 Route::get('/get-bank/{masjidId}', [RegisterController::class, 'getBankByMasjid']);
 

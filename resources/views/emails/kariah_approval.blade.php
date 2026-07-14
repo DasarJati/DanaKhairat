@@ -52,8 +52,8 @@
             text-align: center;
         }
         .status-badge {
-            background-color: #e3f9e5;
-            color: #1a7f37;
+            background-color: #ffebee;
+            color: #dd0b1d;
             padding: 6px 14px;
             border-radius: 20px;
             font-size: 13px;
@@ -152,7 +152,7 @@
         <div style="text-align: center;">
             <p class="salutation">Assalamualaikum {{ $user->nama }},</p>
             <p class="congrats-text">Tahniah, permohonan keahlian anda telah diluluskan.</p>
-            <span class="status-badge">Akaun Aktif</span>
+            <span class="status-badge">Jelaskan Bayaran Untuk Pengaktifan Khairat</span>
         </div>
 
         <!-- Information Card -->

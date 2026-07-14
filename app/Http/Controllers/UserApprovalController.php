@@ -345,7 +345,7 @@ class UserApprovalController extends Controller
                 'subscription' => $subscription,
             ], function ($message) use ($user, $masjidName) {
                 $message->to($user->email)
-                    ->subject('Kelulusan Pendaftaran Keahlian Kariah - ' . $masjidName);
+                    ->subject('Kelulusan Pendaftaran Keahlian khairat');
             });
 
             Log::info('Approval email sent successfully to: ' . $user->email);

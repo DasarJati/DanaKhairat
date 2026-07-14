@@ -458,12 +458,6 @@
                         </button>
                     </div>
 
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-sm text-blue-800">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <strong>Nota:</strong> Tanggungan termasuk isteri/suami dan anak-anak berumur 24 tahun ke bawah.
-                        Anda boleh menambah berbilang tanggungan (tiada had).
-                    </div>
-
                     <div class="mb-4 p-4 bg-gray-50 rounded-lg border">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="noTanggunganCheckbox" onchange="toggleNoTanggungan(this)">
@@ -541,12 +535,6 @@
                             Maklumat Pembayaran
                         </h4>
 
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mb-4">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <strong>Nota:</strong> Sila semak jumlah bayaran yang perlu dibayar di bawah. Pembayaran
-                            akan diproses selepas pendaftaran diluluskan.
-                        </div>
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Yuran Pendaftaran -->
                             <div class="bg-white rounded-lg p-3 border border-gray-200">
@@ -569,8 +557,7 @@
 
                         <div class="mt-4 text-xs text-gray-500 flex items-center gap-2">
                             <i class="fas fa-exclamation-circle text-yellow-500"></i>
-                            <span>Jumlah bayaran ditetapkan mengikut {{ $masjid->nama }}. Arahan pembayaran akan
-                                dihantar selepas pendaftaran diluluskan.</span>
+                            <span>Jumlah bayaran akan dikemaskini mengikut ketetapan pihak pengurusan masing-masing dan tertakluk dalam terma dan syarat khairat.</span>
                         </div>
                     </div>
 
@@ -578,21 +565,14 @@
                     <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 mb-4">
                         <h4 class="font-bold text-gray-800 mb-2">Terma dan Syarat Keahlian</h4>
                         <div class="text-xs text-gray-600 space-y-1">
-                            <p class="font-semibold text-gray-700 mt-2">1. Kelayakan & Maklumat</p>
-                            <p>• Tanggungan termasuk isteri/suami/anak-anak berumur 24 tahun kebawah.</p>
-                            <p>• Ahli wajib mengisi maklumat yang tepat dan lengkap.</p>
-                            <p>• Semua laporan dan maklumat yang dihantar mestilah benar dan sah.</p>
-
-                            <p class="font-semibold text-gray-700 mt-2">2. Bayaran & Tunggakan</p>
-                            <p>• Bayaran keahlian hendaklah dijelaskan mengikut tempoh ditetapkan.</p>
-                            <p>• Tunggakan bayaran boleh menyebabkan akaun digantung atau dinyahaktifkan.</p>
-                            <p>• Jika bayaran tertunggak selama satu tahun, akaun boleh dinyahaktifkan dan direset
-                                sebagai akaun baharu.</p>
-
-                            <p class="font-semibold text-gray-700 mt-2">3. Pentadbiran</p>
-                            <p>• Keahlian tertakluk kepada semakan dan kelulusan AJK.</p>
-                            <p>• Pendaftaran semula tertakluk kepada syarat semasa dan kelulusan AJK.</p>
-                            <p>• AJK berhak meminda terma dan syarat dari semasa ke semasa.</p>
+                            <a id="termsLink" href="{{ route('policy.show', $masjid->id) }}" target="_blank"
+                                rel="noopener"
+                                class="text-djariah-600 hover:text-djariah-700 font-semibold underline inline-flex items-center gap-1">
+                                <i class="fas fa-file-alt"></i> Klik Untuk Baca Terma & Syarat
+                            </a>
+                            <p class="text-gray-400 italic mt-1">
+                                Terma & syarat khas {{ $masjid->nama }} akan dibuka pada tab baharu.
+                            </p>
                         </div>
                         <div class="mt-4 pt-3 border-t border-gray-200 flex items-center">
                             <input type="checkbox" id="agree_terms" name="agree_terms" required

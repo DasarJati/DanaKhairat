@@ -339,6 +339,24 @@ class RegisterController extends Controller
         return response()->json(['exists' => $exists]);
     }
 
+    /**
+     * Display Terma & Syarat (policy) for a specific masjid.
+     * Opened in a new tab via the "Klik Untuk Baca Terma & Syarat" link.
+     */
+    public function showPolicy($masjidId)
+    {
+        $masjid = Masjid::find($masjidId);
+
+        $policy = \App\Models\PolicyHeader::with('sections')
+            ->where('masjid_id', $masjidId)
+            ->first();
+
+        return view('user.policy_khairat', [
+            'masjid' => $masjid,
+            'policy' => $policy,
+        ]);
+    }
+
     public function getHargaKhairat($masjidId)
     {
         $harga = HargaKhairat::where('masjid_id', $masjidId)->first();
