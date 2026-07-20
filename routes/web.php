@@ -33,6 +33,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ToyyibpayController;
 use App\Http\Controllers\ChangeKetuaController;
 use App\Http\Controllers\BulkRegisterController;
+use App\Http\Controllers\AhliProfileController;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
@@ -99,9 +100,8 @@ Route::post('/checkstatus', [AjkStatusController::class, 'check'])->name('status
 
 // FORGOT PASSWORD
 Route::get('/forgot-password', [AuthController::class, 'showEmailForm']);
-Route::post('/forgot-password', [AuthController::class, 'sendResetLink']);
-Route::get('/reset-password', [AuthController::class, 'showResetForm'])->name('password.reset')->middleware('signed');
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/forgot-password', [AuthController::class, 'resetPasswordAndEmail'])
+    ->middleware('throttle:5,1');
 
 // ADMIN ROUTES
 
@@ -274,6 +274,10 @@ Route::get('/user/check-ic', [RegisterController::class, 'checkIc']);
 // ============== USER ROUTES (Ahli Khairat) ==============
 Route::middleware(['auth:web'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'index'])->name('user.dashboard');
+    Route::get('/profil-ahli', [AhliProfileController::class, 'show'])->name('ahli.profile');
+    Route::put('/profil-ahli/password', [AhliProfileController::class, 'updatePassword'])
+        ->middleware('throttle:5,1')
+        ->name('ahli.password.update');
     Route::get('/ahliKeluarga', [UserController::class, 'Keluarga'])->name('ahlikeluarga.index');
     Route::get('/tanggungan/create', [TanggunganController::class, 'create'])->name('tanggungan.create');
     Route::post('/tanggungan', [TanggunganController::class, 'store'])->name('tanggungan.store');
@@ -284,7 +288,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/tuntutan/{tuntutan}', [TuntutanController::class, 'show'])->name('tuntutan.show');
     Route::put('/tuntutan/{tuntutan}', [TuntutanController::class, 'update'])->name('tuntutan.update');
     Route::get('/tuntutankhairat', [DashboardController::class, 'tuntut'])->name('user.rekodtuntut');
-    Route::get('/kewangan/{user}', [UserController::class, 'transactions'])->name('user.transactions');
+    Route::get('/kewangan', [UserController::class, 'transactions'])->name('user.transactions');
     Route::post('/user/{user}/transactions', [UserController::class, 'storeTransaction'])->name('user.transactions.store');
     Route::post('/user/transactions/update/{subscriptionId}', [UserController::class, 'updateTransaction'])->name('user.transactions.update');
     Route::put('/tuntutan/approve/{id}', [ApproveTuntutanController::class, 'approve'])->name('tuntutan.approve');

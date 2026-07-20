@@ -8,7 +8,7 @@ use App\Models\UserRegister;
 use App\Models\masjid;
 use App\Models\User;
 use App\Models\AhliKariah;
-use App\Models\Waris;
+use App\Models\Tanggungan;
 use App\Models\SubscriptionsKariah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +46,7 @@ class BulkRegisterController extends Controller
 
         // Set title
         $sheet->setCellValue('A1', 'TEMPLATE IMPORT AHLI KHAIRAT');
-        $sheet->mergeCells('A1:O1');
+        $sheet->mergeCells('A1:P1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -57,7 +57,9 @@ class BulkRegisterController extends Controller
         $sheet->setCellValue('A5', '3. Jantina: LELAKI atau PEREMPUAN');
         $sheet->setCellValue('A6', '4. Status: AKTIF atau TIDAK AKTIF');
         $sheet->setCellValue('A7', '5. Tarikh: format YYYY-MM-DD (contoh: 2026-01-15)');
-        $sheet->setCellValue('A8', '6. Untuk Keahlian: Isi kolum TARIKH MULA KEAHLIAN jika ingin daftar keahlian (tarikh tamat dikira automatik)');
+        $sheet->setCellValue('A8', '6. Tanggungan: Maksimum 1 tanggungan sahaja. Kosongkan semua kolum tanggungan jika tiada tanggungan.');
+        $sheet->setCellValue('A9', '7. Hubungan tanggungan: ISTERI, SUAMI, ANAK, IBU, AYAH, MERTUA atau LAIN');
+        $sheet->setCellValue('A10', '8. Untuk Keahlian: Isi kolum TARIKH MULA KEAHLIAN jika ingin daftar keahlian (tarikh tamat dikira automatik)');
         $sheet->mergeCells('A2:Q2');
         $sheet->mergeCells('A3:Q3');
         $sheet->mergeCells('A4:Q4');
@@ -65,10 +67,12 @@ class BulkRegisterController extends Controller
         $sheet->mergeCells('A6:Q6');
         $sheet->mergeCells('A7:Q7');
         $sheet->mergeCells('A8:Q8');
-        $sheet->getStyle('A2:A8')->getFont()->setSize(10);
-        $sheet->getStyle('A2:A8')->getFont()->getColor()->setARGB('FF64748B');
+        $sheet->mergeCells('A9:Q9');
+        $sheet->mergeCells('A10:Q10');
+        $sheet->getStyle('A2:A10')->getFont()->setSize(10);
+        $sheet->getStyle('A2:A10')->getFont()->getColor()->setARGB('FF64748B');
 
-        // Headers (row 10)
+        // Headers (row 12)
         $headers = [
             'A' => 'NAMA*',
             'B' => 'NO. KAD PENGENALAN*',
@@ -80,14 +84,15 @@ class BulkRegisterController extends Controller
             'H' => 'UMUR',
             'I' => 'BANGSA',
             'J' => 'STATUS AHLI',
-            'K' => 'WARIS NAMA',
-            'L' => 'WARIS IC',
-            'M' => 'WARIS TELEFON',
-            'N' => 'WARIS ALAMAT',
-            'O' => 'TARIKH MULA KEAHLIAN',
+            'K' => 'TANGGUNGAN NAMA',
+            'L' => 'TANGGUNGAN IC',
+            'M' => 'TANGGUNGAN HUBUNGAN',
+            'N' => 'TANGGUNGAN JANTINA',
+            'O' => 'TANGGUNGAN OKU',
+            'P' => 'TARIKH MULA KEAHLIAN',
         ];
 
-        $row = 10;
+        $row = 12;
         foreach ($headers as $col => $header) {
             $sheet->setCellValue($col . $row, $header);
             $sheet->getStyle($col . $row)->getFont()->setBold(true);
@@ -98,7 +103,7 @@ class BulkRegisterController extends Controller
             $sheet->getStyle($col . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
 
-        // Sample data (row 11)
+        // Sample data (row 13)
         $sampleData = [
             'A' => 'MOHAMMAD BIN AHMAD',
             'B' => '010101-10-1234',
@@ -111,13 +116,14 @@ class BulkRegisterController extends Controller
             'I' => 'MELAYU',
             'J' => 'AKTIF',
             'K' => 'SITI BINTI ALI',
-            'L' => '010101-10-5678',
-            'M' => '011-23456789',
-            'N' => 'NO 12, JALAN SENTOSA, TAMAN SENTOSA, 43000 KAJANG',
-            'O' => '2026-01-15',
+            'L' => '850505-05-5678',
+            'M' => 'ISTERI',
+            'N' => 'PEREMPUAN',
+            'O' => 'TIDAK',
+            'P' => '2026-01-15',
         ];
 
-        $row = 11;
+        $row = 13;
         foreach ($sampleData as $col => $value) {
             $sheet->setCellValue($col . $row, $value);
             $sheet->getStyle($col . $row)->getFont()->getColor()->setARGB('FF94A3B8');
@@ -132,10 +138,10 @@ class BulkRegisterController extends Controller
                 ],
             ],
         ];
-        $sheet->getStyle('A10:O11')->applyFromArray($styleArray);
+        $sheet->getStyle('A12:P13')->applyFromArray($styleArray);
 
         // Auto-size columns
-        foreach (range('A', 'O') as $columnID) {
+        foreach (range('A', 'P') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 
@@ -151,15 +157,16 @@ class BulkRegisterController extends Controller
             'H' => 'Umur dalam tahun (pilihan)',
             'I' => 'MELAYU/CINA/INDIA/LAIN (pilihan)',
             'J' => 'AKTIF atau TIDAK AKTIF (pilihan - default AKTIF)',
-            'K' => 'Nama waris (pilihan)',
-            'L' => 'IC waris format YYMMDD-XX-XXXX (pilihan)',
-            'M' => 'No telefon waris (pilihan)',
-            'N' => 'Alamat waris (pilihan)',
-            'O' => 'Tarikh mula keahlian format YYYY-MM-DD (pilihan)',
+            'K' => 'Nama tanggungan (pilihan - kosongkan jika tiada tanggungan)',
+            'L' => 'IC tanggungan format YYMMDD-XX-XXXX (wajib jika ada nama tanggungan)',
+            'M' => 'Hubungan: ISTERI/SUAMI/ANAK/IBU/AYAH/MERTUA/LAIN (wajib jika ada tanggungan)',
+            'N' => 'Jantina tanggungan: LELAKI/PEREMPUAN/LAIN (pilihan)',
+            'O' => 'OKU tanggungan: YA atau TIDAK (pilihan - default TIDAK)',
+            'P' => 'Tarikh mula keahlian format YYYY-MM-DD (pilihan)',
         ];
 
         foreach ($comments as $col => $comment) {
-            $sheet->getComment($col . '10')->getText()->createTextRun($comment);
+            $sheet->getComment($col . '12')->getText()->createTextRun($comment);
         }
 
         // Create response
@@ -242,11 +249,12 @@ class BulkRegisterController extends Controller
                 $umur = trim($row[7] ?? '');
                 $bangsa = trim($row[8] ?? '');
                 $status_ahli = trim($row[9] ?? '');
-                $waris_nama = trim($row[10] ?? '');
-                $waris_ic = trim($row[11] ?? '');
-                $waris_telefon = trim($row[12] ?? '');
-                $waris_alamat = trim($row[13] ?? '');
-                $tarikh_mula = trim($row[14] ?? '');
+                $tanggungan_nama = trim($row[10] ?? '');
+                $tanggungan_ic = trim($row[11] ?? '');
+                $tanggungan_hubungan = trim($row[12] ?? '');
+                $tanggungan_jantina = trim($row[13] ?? '');
+                $tanggungan_oku = trim($row[14] ?? '');
+                $tarikh_mula = trim($row[15] ?? '');
 
                 $fail = function (string $message) use (&$results, $rowNum, $nama, $ic_number, $notel, $email) {
                     $results['failed']++;
@@ -270,14 +278,11 @@ class BulkRegisterController extends Controller
                     }
 
                     // Validate IC format
-                    $cleanIc = preg_replace('/[^0-9]/', '', $ic_number);
-                    if (strlen($cleanIc) !== 12) {
+                    $formattedIc = $this->formatIc($ic_number);
+                    if (!$formattedIc) {
                         $fail("Format IC tidak sah ({$ic_number}).");
                         continue;
                     }
-
-                    // Format IC
-                    $formattedIc = substr($cleanIc, 0, 6) . '-' . substr($cleanIc, 6, 2) . '-' . substr($cleanIc, 8, 4);
 
                     // Check if user already exists
                     $existingUser = User::where('ic_number', $formattedIc)
@@ -300,6 +305,33 @@ class BulkRegisterController extends Controller
                     if (!empty($status_ahli) && strtoupper($status_ahli) == 'TIDAK AKTIF') {
                         $statusValue = 'inactive';
                     }
+
+                    // Validate tanggungan (optional — max 1)
+                    $tanggunganPayload = null;
+                    if (!empty($tanggungan_nama)) {
+                        $tanggunganError = $this->validateTanggunganRow(
+                            $tanggungan_nama,
+                            $tanggungan_ic,
+                            $tanggungan_hubungan,
+                            $tanggungan_jantina,
+                            $tanggungan_oku
+                        );
+
+                        if ($tanggunganError) {
+                            $fail($tanggunganError);
+                            continue;
+                        }
+
+                        $tanggunganPayload = [
+                            'nama' => strtoupper($tanggungan_nama),
+                            'ic_number' => $this->formatIc($tanggungan_ic),
+                            'hubungan' => strtoupper($tanggungan_hubungan),
+                            'jantina' => !empty($tanggungan_jantina) ? strtoupper($tanggungan_jantina) : null,
+                            'oku' => in_array(strtoupper($tanggungan_oku), ['YA', 'Y', '1', 'TRUE'], true) ? 1 : 0,
+                        ];
+                    }
+
+                    $familyId = $this->generateFamilyId($masjid_id);
 
                     // 1. CREATE USER
                     $user = User::create([
@@ -324,32 +356,21 @@ class BulkRegisterController extends Controller
                         'jantina' => strtoupper($jantina),
                         'alamat' => $alamat ?: null,
                         'status' => $statusValue,
-                        'family_id' => null, // Will be updated below
-                        'is_ketua' => 1, // Set as ketua
+                        'family_id' => $familyId,
+                        'is_ketua' => 1,
                     ]);
 
-                    // Update family_id to match ahli_kariah id (self-referencing)
-                    // $ahliKariah->family_id = $ahliKariah->id;
-                    // $ahliKariah->save();
-
-                    // 3. CREATE WARIS (if provided)
-                    if (!empty($waris_nama)) {
-                        // Format waris IC if provided
-                        $formattedWarisIc = null;
-                        if (!empty($waris_ic)) {
-                            $cleanWarisIc = preg_replace('/[^0-9]/', '', $waris_ic);
-                            if (strlen($cleanWarisIc) === 12) {
-                                $formattedWarisIc = substr($cleanWarisIc, 0, 6) . '-' . substr($cleanWarisIc, 6, 2) . '-' . substr($cleanWarisIc, 8, 4);
-                            }
-                        }
-
-                        Waris::create([
+                    // 3. CREATE TANGGUNGAN (if provided)
+                    if ($tanggunganPayload) {
+                        Tanggungan::create([
                             'ahli_id' => $ahliKariah->id,
-                            'nama' => strtoupper($waris_nama),
-                            'ic_number' => $formattedWarisIc,
-                            'alamat' => $waris_alamat ?: null,
-                            'telefon_pejabat' => null,
-                            'telefon_bimbit' => $waris_telefon ?: null,
+                            'family_id' => $familyId,
+                            'nama' => $tanggunganPayload['nama'],
+                            'ic_number' => $tanggunganPayload['ic_number'],
+                            'hubungan' => $tanggunganPayload['hubungan'],
+                            'jantina' => $tanggunganPayload['jantina'],
+                            'oku' => $tanggunganPayload['oku'],
+                            'status' => 'active',
                         ]);
                     }
 
@@ -382,6 +403,7 @@ class BulkRegisterController extends Controller
                         'nama' => $user->nama,
                         'ic' => $user->ic_number,
                         'email' => $user->email,
+                        'tanggungan' => $tanggunganPayload ? 'Ya' : 'Tidak',
                         'subscription' => !empty($tarikh_mula) ? 'Ya' : 'Tidak',
                     ];
                     $results['rows'][] = [
@@ -441,6 +463,110 @@ class BulkRegisterController extends Controller
         }
 
         return 'Ralat tidak dijangka semasa memproses baris ini.';
+    }
+
+    private function formatIc(?string $ic): ?string
+    {
+        if (empty($ic)) {
+            return null;
+        }
+
+        $cleanIc = preg_replace('/[^0-9]/', '', $ic);
+        if (strlen($cleanIc) !== 12) {
+            return null;
+        }
+
+        return substr($cleanIc, 0, 6) . '-' . substr($cleanIc, 6, 2) . '-' . substr($cleanIc, 8, 4);
+    }
+
+    private function validateTanggunganRow(
+        string $nama,
+        string $ic,
+        string $hubungan,
+        ?string $jantina,
+        ?string $oku
+    ): ?string {
+        if (empty($ic) || empty($hubungan)) {
+            return 'Medan tanggungan tidak lengkap (nama/IC/hubungan).';
+        }
+
+        $formattedIc = $this->formatIc($ic);
+        if (!$formattedIc) {
+            return "Format IC tanggungan tidak sah ({$ic}).";
+        }
+
+        $allowedHubungan = ['ISTERI', 'SUAMI', 'ANAK', 'IBU', 'AYAH', 'MERTUA', 'LAIN'];
+        if (!in_array(strtoupper($hubungan), $allowedHubungan, true)) {
+            return 'Hubungan tanggungan tidak sah. Gunakan ISTERI, SUAMI, ANAK, IBU, AYAH, MERTUA atau LAIN.';
+        }
+
+        if (!empty($jantina) && !in_array(strtoupper($jantina), ['LELAKI', 'PEREMPUAN', 'LAIN'], true)) {
+            return 'Jantina tanggungan tidak sah. Gunakan LELAKI, PEREMPUAN atau LAIN.';
+        }
+
+        $existingAhli = AhliKariah::where('ic', $formattedIc)->first();
+        if ($existingAhli) {
+            return "IC tanggungan {$formattedIc} sudah wujud dalam sistem.";
+        }
+
+        $existingTanggungan = Tanggungan::where('ic_number', $formattedIc)->first();
+        if ($existingTanggungan) {
+            return "IC tanggungan {$formattedIc} sudah didaftarkan sebagai tanggungan.";
+        }
+
+        $isOku = in_array(strtoupper((string) $oku), ['YA', 'Y', '1', 'TRUE'], true);
+        $info = $this->extractDobAgeFromIc($ic);
+
+        if (!$info) {
+            return "Nombor IC tanggungan \"{$nama}\" tidak sah.";
+        }
+
+        if (!$isOku && strtoupper($hubungan) === 'ANAK' && $info['umur'] > 24) {
+            return "Anak \"{$nama}\" tidak layak (umur {$info['umur']} tahun melebihi 24 tahun).";
+        }
+
+        return null;
+    }
+
+    private function extractDobAgeFromIc(string $ic): ?array
+    {
+        $ic = preg_replace('/[^0-9]/', '', $ic);
+
+        if (strlen($ic) !== 12) {
+            return null;
+        }
+
+        $year = (int) substr($ic, 0, 2);
+        $month = (int) substr($ic, 2, 2);
+        $day = (int) substr($ic, 4, 2);
+
+        if ($month < 1 || $month > 12 || $day < 1 || $day > 31) {
+            return null;
+        }
+
+        $year = $year < 30 ? 2000 + $year : 1900 + $year;
+        $tarikhLahir = sprintf('%04d-%02d-%02d', $year, $month, $day);
+
+        return [
+            'tarikh_lahir' => $tarikhLahir,
+            'umur' => Carbon::parse($tarikhLahir)->age,
+        ];
+    }
+
+    private function generateFamilyId(int $masjidId): string
+    {
+        $date = now()->format('Ymd');
+        $random = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+        $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+
+        $attempts = 0;
+        while (AhliKariah::where('family_id', $familyId)->exists() && $attempts < 10) {
+            $random = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+            $familyId = "FAM-{$masjidId}-{$date}-{$random}";
+            $attempts++;
+        }
+
+        return $familyId;
     }
 
     /**

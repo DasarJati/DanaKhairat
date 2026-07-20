@@ -11,16 +11,16 @@ use Illuminate\Queue\SerializesModels;
 
 class ResetPasswordMail extends Mailable
 {
-        public $url;
+    public string $temporaryPassword;
 
-    public function __construct($url)
+    public function __construct(string $temporaryPassword)
     {
-        $this->url = $url;
+        $this->temporaryPassword = $temporaryPassword;
     }
 
     public function build()
     {
-        return $this->subject('Reset Kata Laluan')
+        return $this->subject('Kata Laluan Baharu Anda')
             ->view('Auth.emailreset');
     }
 }

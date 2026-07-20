@@ -2,21 +2,20 @@
 <html>
 <body style="font-family: Arial">
 
-    <h2>Reset Kata Laluan</h2>
+    <h2>Kata Laluan Baharu</h2>
 
-    <p>Anda telah membuat permintaan reset kata laluan.</p>
+    <p>Kata laluan akaun anda telah ditetapkan semula.</p>
 
-    <p>
-        <a href="{{ $url }}"
-           style="background:#2563eb;color:#fff;padding:12px 20px;
-                  text-decoration:none;border-radius:6px;">
-            Reset Password
-        </a>
+    <p>Kata laluan baharu anda:</p>
+
+    <p style="background:#f3f4f6;border-radius:6px;font-family:monospace;
+              font-size:20px;font-weight:bold;letter-spacing:1px;padding:12px 20px;">
+        {{ $temporaryPassword }}
     </p>
 
-    <p>Link ini sah selama <b>15 minit</b>.</p>
+    <p>Gunakan kata laluan ini untuk log masuk. Demi keselamatan, sila tukar kata laluan selepas log masuk.</p>
 
-    <p>Jika bukan anda, abaikan email ini.</p>
+    <p>Jika anda tidak membuat permintaan ini, sila hubungi pentadbir sistem dengan segera.</p>
 
 </body>
 </html>

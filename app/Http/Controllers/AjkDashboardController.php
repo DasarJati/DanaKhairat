@@ -97,6 +97,7 @@ class AjkDashboardController extends Controller
         $jumlahPerempuan = AhliKariah::where('masjid_id', $masjidId)->where('jantina', 'PEREMPUAN')->count();
 
         $imagePath = Masjid::where('id', $masjidId)->value('image_path');
+        $masjid = Masjid::find($masjidId);
 
         $payments = Payment::where('masjid_id', $user->masjid_id)
             ->where('flow_type', 'income')
@@ -128,6 +129,8 @@ class AjkDashboardController extends Controller
             'logs',
             'totalDana',
             'masjidId',
+            'masjid',
+            'user',
             'jumlahAhliPending',
             'imagePath'
         ));

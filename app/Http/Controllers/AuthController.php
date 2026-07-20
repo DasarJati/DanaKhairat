@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Mail\ResetPasswordMail;
-use App\Models\AjkRegister;
 use App\Models\User;
 use App\Models\ActivityLog;
 use App\Models\SubscriptionsMasjid;
@@ -19,6 +19,13 @@ use App\Models\SubscriptionsKariah;
 
 class AuthController extends Controller
 {
+    private const PASSWORD_WORDS = [
+        'Anggerik', 'Awan', 'Berlian', 'Bintang', 'Cahaya', 'Delima',
+        'Embun', 'Harimau', 'Jelita', 'Kenanga', 'Kereta', 'Langit',
+        'Melur', 'Mutiara', 'Pelangi', 'Permata', 'Rimba', 'Samudera',
+        'Suria', 'Teratai',
+    ];
+
     public function showLogin()
     {
         return view('pic.login'); // blade kau
@@ -177,69 +184,60 @@ class AuthController extends Controller
         return view('auth.forgotpassword');
     }
 
-    public function sendResetLink(Request $request)
+    public function resetPasswordAndEmail(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email'
+        ], [
+            'email.required' => 'Alamat e-mel diperlukan.',
+            'email.email' => 'Sila masukkan alamat e-mel yang sah.',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-        $ajk  = AjkRegister::where('email', $request->email)->first();
+        $email = Str::lower(trim($validated['email']));
+        $user = User::where('email', $email)->first();
 
-        if (!$user && !$ajk) {
+        if (!$user) {
             return back()->withErrors([
-                'email' => 'Email tidak dijumpai'
-            ]);
+                'email' => 'Alamat e-mel ini tidak dijumpai dalam sistem.'
+            ])->withInput();
         }
 
-        $type = $user ? 'user' : 'ajk';
+        $temporaryPassword = $this->generateTemporaryPassword();
 
-        $url = URL::temporarySignedRoute(
-            'password.reset',
-            now()->addMinutes(15),
-            [
-                'email' => $request->email,
-                'type'  => $type
-            ]
-        );
+        try {
+            DB::transaction(function () use ($user, $email, $temporaryPassword) {
+                $user->password = Hash::make($temporaryPassword);
+                $user->save();
+
+                Mail::to($email)->send(new ResetPasswordMail($temporaryPassword));
+            });
+        } catch (\Throwable $exception) {
+            Log::error('Failed to reset and email a temporary password.', [
+                'user_id' => $user->id,
+                'exception' => $exception,
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Kata laluan tidak dapat ditetapkan semula sekarang. Sila cuba lagi.'
+            ])->withInput();
+        }
 
         // 🔥 HANTAR EMAIL
-        Mail::to($request->email)->send(
-            new ResetPasswordMail($url)
-        );
-
         return back()->with(
             'success',
-            'Link reset password telah dihantar ke email anda.'
+            'Kata laluan baharu telah dihantar ke e-mel anda.'
         );
     }
 
-
-    public function showResetForm(Request $request)
+    private function generateTemporaryPassword(): string
     {
-        return view('auth.resetpassword');
+        $symbols = '!@#$%&*+-=?{}';
+        $word = self::PASSWORD_WORDS[random_int(0, count(self::PASSWORD_WORDS) - 1)];
+        $firstSymbol = $symbols[random_int(0, strlen($symbols) - 1)];
+        $secondSymbol = $symbols[random_int(0, strlen($symbols) - 1)];
+        $numbers = random_int(100, 999);
+
+        return $word.$firstSymbol.$secondSymbol.$numbers;
     }
 
-    public function resetPassword(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|min:6|confirmed',
-            'type' => 'required'
-        ]);
-
-        if ($request->type === 'user') {
-            $user = User::where('email', $request->email)->firstOrFail();
-            $user->password = Hash::make($request->password);
-            $user->save();
-        }
-
-        if ($request->type === 'ajk') {
-            $ajk = AjkRegister::where('email', $request->email)->firstOrFail();
-            $ajk->password = Hash::make($request->password);
-            $ajk->save();
-        }
-
-        return redirect('/login')->with('success', 'Password berjaya ditukar');
-    }
 }

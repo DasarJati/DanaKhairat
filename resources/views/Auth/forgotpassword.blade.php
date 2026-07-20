@@ -42,7 +42,7 @@
                 Lupa Kata Laluan
             </h1>
             <p class="text-gray-600 text-sm leading-relaxed">
-                Masukkan email anda dan kami akan menghantar pautan untuk menetapkan semula kata laluan
+                Masukkan e-mel berdaftar anda. Sistem akan menetapkan semula kata laluan dan menghantar kata laluan baharu kepada anda.
             </p>
         </div>
 
@@ -94,6 +94,7 @@
                     <input
                         type="email"
                         name="email"
+                        value="{{ old('email') }}"
                         required
                         placeholder="contoh: ajk@masjid.com"
                         class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl
@@ -115,7 +116,7 @@
                        transition focus:ring-2 focus:ring-primary focus:ring-offset-2
                        shadow-md hover:shadow-lg active:scale-[0.99]"
             >
-                Hantar Pautan Reset
+                Hantar Kata Laluan Baharu
             </button>
         </form>
 

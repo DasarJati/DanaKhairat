@@ -333,7 +333,10 @@ class UserController extends Controller
     }
 
     public function transactions(User $user)
-    {
+    { 
+
+        $Auth = auth()->user();
+        $user = User::findOrFail($Auth->id);
         // Get price
         $harga = HargaKhairat::where('masjid_id', $user->masjid_id)->first();
 

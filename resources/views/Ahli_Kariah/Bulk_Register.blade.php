@@ -216,8 +216,9 @@
                         <li>Alamat Emel</li>
                         <li>Alamat Rumah</li>
                         <li>Tarikh Lahir & Umur</li>
-                        <li>Bangsa & Status Perkahwinan</li>
-                        <li>Nama Waris / Hubungan</li>
+                        <li>Bangsa & Status Ahli</li>
+                        <li>Maklumat Tanggungan <span class="text-sm font-normal text-gray-700">(Maksimum 1 — kosongkan jika tiada)</span></li>
+                        <li>Tarikh Mula Keahlian</li>
                     </ul>
                 </div>
                 

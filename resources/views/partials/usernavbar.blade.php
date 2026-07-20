@@ -114,6 +114,14 @@
                     </svg>
                     Profil AJK
                 </a>
+            @elseif(auth()->user()->role == 2)
+                <a href="{{ route('ahli.profile') }}"
+                    class="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gold-500 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Profil Ahli
+                </a>
             @endif
 
             {{-- <a href="/pic/editprofile" class="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gold-500 hover:text-white transition-colors">
