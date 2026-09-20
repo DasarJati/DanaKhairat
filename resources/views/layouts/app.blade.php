@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'e-Khairat')</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
     <!-- Tailwind CSS CDN -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
