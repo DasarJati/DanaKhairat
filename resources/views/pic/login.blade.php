@@ -45,14 +45,15 @@
                     <div class="flex bg-slate-100 p-1.5 rounded-2xl gap-1">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="login_type" value="admin" class="peer hidden loginType"
-                                checked />
+                                @checked(old('login_type', 'admin') === 'admin') />
                             <div
                                 class="py-3 text-center rounded-xl transition-all duration-300 font-semibold text-slate-500 peer-checked:bg-white peer-checked:text-blue-700 peer-checked:shadow-sm">
                                 <i class="fa-solid fa-user-shield mr-2"></i>Admin
                             </div>
                         </label>
                         <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="login_type" value="ahli" class="peer hidden loginType" />
+                            <input type="radio" name="login_type" value="ahli" class="peer hidden loginType"
+                                @checked(old('login_type') === 'ahli') />
                             <div
                                 class="py-3 text-center rounded-xl transition-all duration-300 font-semibold text-slate-500 peer-checked:bg-white peer-checked:text-emerald-700 peer-checked:shadow-sm">
                                 <i class="fa-solid fa-users mr-2"></i>Ahli

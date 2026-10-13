@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     'auth.multi' => \App\Http\Middleware\MultiGuardAuth::class,
     
     'check.subscription' => \App\Http\Middleware\CheckSubscription::class,
+    'admin' => \App\Http\Middleware\EnsureAdmin::class,
     ]);
 
     })

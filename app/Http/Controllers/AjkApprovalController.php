@@ -65,11 +65,19 @@ class AjkApprovalController extends Controller
 
         try {
             $app = AjkRegister::findOrFail($id);
-            $pakej = AjkPakej::where('ajk_id', $app->id)->firstOrFail();
+            // Pakej kini dilanggan selepas log masuk, jadi permohonan baharu tiada rekod pakej
+            $pakej = AjkPakej::where('ajk_id', $app->id)->first();
 
             // ❌ Elak approve dua kali
             if ($app->status != 0) {
+                DB::rollBack();
                 return back()->with('error', 'Permohonan ini telah diproses.');
+            }
+
+            // E-mel yang sama dibenarkan untuk akaun Ahli (role 2) sahaja
+            if (User::where('email', $app->email)->whereIn('role', [0, 1])->exists()) {
+                DB::rollBack();
+                return back()->with('error', 'E-mel ini sudah mempunyai akaun Admin/AJK.');
             }
 
             /* =====================================================
@@ -87,17 +95,20 @@ class AjkApprovalController extends Controller
                 'price'     => $pakej->price ?? 0,
                 'resit'     => $pakej->resit ?? null,
                 'status'    => 'active',
+                'salinan_ic'        => $app->salinan_ic,
+                'sijil_pendaftaran' => $app->sijil_pendaftaran,
+                'slip_akaun'        => $app->slip_akaun,
             ]);
 
             /* =====================================================
          * 2️⃣ CREATE USER (AJK)
          * ===================================================== */
             $user = User::create([
-                'nama'        => $app->nama_masjid,
+                'nama'        => $app->nama_pendaftar ?: $app->nama_masjid,
                 'ic_number'   => $app->ic,
                 'email'       => $app->email,
-                'telefon_bimbit' => $app->telefon,
-                'password'      => $app->password,
+                'tel_number'  => $app->notel,
+                'password'      => $app->password, // sudah di-hash semasa pendaftaran
                 'masjid_id'   => $masjid->id,
                 'role'        => '1',
                 'status'      => 'active',
@@ -208,35 +219,38 @@ class AjkApprovalController extends Controller
             * 5️⃣ HANTAR EMAIL
             * ===================================================== */
 
-            $Amount = $masjid->price ?? 0;
-
-            Mail::to($user->email)->send(
-                new AjkApprovedMail(
-                    $app,
-                    $masjid,
-                    $Amount
-                )
-            );
             DB::commit();
 
-            \Log::info('ApproveRegister Data Dump', [
-                'AjkRegister' => $app->toArray(),
-                'Masjid'      => $masjid->toArray(),
-                'User'        => $user->toArray(),
-                'Ajk'         => Ajks::where('user_id', $user->id)->where('masjid_id', $masjid->id)->first()->toArray(),
-                'Pakej'       => $pakej->toArray(),
+            \Log::info('Permohonan institusi diluluskan', [
+                'application_id' => $app->id,
+                'masjid_id'      => $masjid->id,
+                'user_id'        => $user->id,
             ]);
+
+            // E-mel dihantar selepas commit supaya kegagalan e-mel tidak membatalkan kelulusan
+            $Amount = $pakej->price ?? 0;
+
+            try {
+                Mail::to($user->email)->send(new AjkApprovedMail($app, $masjid, $Amount));
+            } catch (\Throwable $mailError) {
+                \Log::error('Gagal menghantar e-mel kelulusan institusi: ' . $mailError->getMessage());
+
+                return redirect()->back()
+                    ->with('success', 'Permohonan diluluskan, tetapi e-mel makluman gagal dihantar. Sila maklumkan pemohon secara manual.');
+            }
 
             return redirect()->back()
                 ->with('success', 'Permohonan diluluskan, user & masjid berjaya diwujudkan.');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            dd(
-                $e->getMessage(),
-                $e->getFile(),
-                $e->getLine()
-            );
+            \Log::error('Kelulusan permohonan institusi gagal', [
+                'application_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Kelulusan gagal diproses. Sila cuba lagi.');
         }
     }
 

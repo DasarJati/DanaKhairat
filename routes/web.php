@@ -103,27 +103,28 @@ Route::get('/forgot-password', [AuthController::class, 'showEmailForm']);
 Route::post('/forgot-password', [AuthController::class, 'resetPasswordAndEmail'])
     ->middleware('throttle:5,1');
 
-// ADMIN ROUTES
+// ADMIN ROUTES — Super Admin (role 0) sahaja
+Route::middleware(['admin'])->group(function () {
+    Route::get('/admin/main', [AdminController::class, 'main'])->name('admin.main');
 
-Route::get('/admin/main', [AdminController::class, 'main'])->name('admin.main');
+    Route::get('/admin/dashboard', [AjkApprovalController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/list-masjid', [AjkApprovalController::class, 'listMasjid'])->name('admin.list.masjid');
+    Route::get('/admin/view/{id}', [AjkApprovalController::class, 'view'])->name('admin.view');
+    Route::post('/admin/approve-register/{id}', [AjkApprovalController::class, 'approveRegister'])->name('admin.approve.register');
+    Route::post('/admin/reject/{id}', [AjkApprovalController::class, 'reject'])->name('admin.reject');
+    Route::get('/details/{id}', [AjkApprovalController::class, 'details'])->name('admin.details');
+    Route::get('/admin/list-kariah', [AdminController::class, 'listKariah'])
+        ->name('admin.listkariah');
 
-Route::get('/admin/dashboard', [AjkApprovalController::class, 'dashboard'])->name('admin.dashboard');
-Route::get('/admin/list-masjid', [AjkApprovalController::class, 'listMasjid'])->name('admin.list.masjid');
-Route::get('/admin/view/{id}', [AjkApprovalController::class, 'view'])->name('admin.view');
-Route::post('/admin/approve-register/{id}', [AjkApprovalController::class, 'approveRegister'])->name('admin.approve.register');
-Route::post('/admin/reject/{id}', [AjkApprovalController::class, 'reject'])->name('admin.reject');
-Route::get('/details/{id}', [AjkApprovalController::class, 'details'])->name('admin.details');
-Route::get('/admin/list-kariah', [AdminController::class, 'listKariah'])
-    ->name('admin.listkariah');
+    Route::get('/adminwallet', [AdminwalletController::class, 'wallet'])->name('admin.wallet');
+    Route::get('/admin/payment/{id}/upload', [AdminwalletController::class, 'showUpload'])->name('payment.upload');
+    Route::post('/admin/payment/{id}/upload', [AdminwalletController::class, 'uploadResit'])->name('resit.upload');
 
-Route::get('/adminwallet', [AdminwalletController::class, 'wallet'])->name('admin.wallet');
-Route::get('/admin/payment/{id}/upload', [AdminwalletController::class, 'showUpload'])->name('payment.upload');
-Route::post('/admin/payment/{id}/upload', [AdminwalletController::class, 'uploadResit'])->name('resit.upload');
-
-Route::get('/user-approval', [UserApprovalController::class, 'index'])->name('admin.user');
-Route::get('/user-approval/{id}', [UserApprovalController::class, 'show'])->name('user.view');
-Route::put('/admin/user/{id}/approve', [UserApprovalController::class, 'approve'])->name('user.approve');
-Route::put('/admin/user/{id}/reject', [UserApprovalController::class, 'reject'])->name('user.reject');
+    Route::get('/user-approval', [UserApprovalController::class, 'index'])->name('admin.user');
+    Route::get('/user-approval/{id}', [UserApprovalController::class, 'show'])->name('user.view');
+    Route::put('/admin/user/{id}/approve', [UserApprovalController::class, 'approve'])->name('user.approve');
+    Route::put('/admin/user/{id}/reject', [UserApprovalController::class, 'reject'])->name('user.reject');
+});
 
 
 Route::post('/payment/callback', [ToyyibpayController::class, 'paymentCallback'])->name('payment.callback');

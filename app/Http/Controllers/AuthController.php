@@ -115,8 +115,13 @@ class AuthController extends Controller
 
         $allowedRoles = $roleMap[$request->login_type] ?? [];
 
+        // Kekalkan e-mel dan tab (Admin/Ahli) yang dipilih apabila log masuk gagal
+        $fail = fn (string $message) => back()
+            ->withInput($request->only('email', 'login_type'))
+            ->with('error', $message);
+
         if (empty($allowedRoles)) {
-            return back()->with('error', 'Jenis log masuk tidak sah.');
+            return $fail('Jenis log masuk tidak sah.');
         }
 
         // Find user by email AND allowed roles
@@ -125,22 +130,23 @@ class AuthController extends Controller
             ->first();
 
         if (!$user) {
-            return back()->with('error', 'Akaun dengan e-mel ini tidak ditemui untuk log masuk sebagai ' .
+            return $fail('Akaun dengan e-mel ini tidak ditemui untuk log masuk sebagai ' .
                 ($request->login_type == 'ahli' ? 'Ahli' : 'Admin/PIC') . '.');
         }
 
         // Wrong password
         if (!Hash::check($request->password, $user->password)) {
-            return back()->with('error', 'Kata laluan salah. Sila cuba lagi.');
+            return $fail('Kata laluan salah. Sila cuba lagi.');
         }
 
         // Account inactive
         if ($user->status !== 'active') {
-            return back()->with('error', 'Akaun anda tidak aktif. Sila hubungi pentadbir.');
+            return $fail('Akaun anda tidak aktif. Sila hubungi pentadbir.');
         }
 
         // Login
-        Auth::login($user);
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
 
         // ACTIVITY LOG
         ActivityLog::create([

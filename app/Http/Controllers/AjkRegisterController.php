@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use App\Models\AjkRegister;
 use App\Models\AjkDocs;
 use App\Models\AjkPakej;
@@ -38,7 +39,12 @@ class AjkRegisterController extends Controller
                 'negeri_id' => 'required|exists:negeri,id',
                 'nama_masjid' => 'required|string|max:150',
                 'alamat' => 'required|string|max:255',
-                'email' => 'required|email|max:150|unique:users,email', // Changed from ajk_register to users
+                // E-mel yang sama dibenarkan untuk akaun Ahli (role 2), jadi semak
+                // hanya akaun Admin/AJK sedia ada.
+                'email' => [
+                    'required', 'email', 'max:150',
+                    Rule::unique('users', 'email')->where(fn ($q) => $q->whereIn('role', [0, 1])),
+                ],
                 'password' => 'required|min:6|confirmed',
 
                 // Tab 2: Dokumen
@@ -72,8 +78,6 @@ class AjkRegisterController extends Controller
                     ->with('error', $errorMessage);
             }
 
-            \DB::beginTransaction();
-
             // ===============================
             // GET BANDAR
             // ===============================
@@ -87,6 +91,8 @@ class AjkRegisterController extends Controller
                 return back()->withInput()
                     ->with('error', 'Sila pilih atau masukkan bandar.');
             }
+
+            \DB::beginTransaction();
 
             // ===============================
             // CHECK/ CREATE POSKOD
